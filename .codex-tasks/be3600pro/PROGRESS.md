@@ -78,4 +78,5 @@
 - 整合复验通过：33项测试5.010秒（60秒硬超时）、actionlint、Bash/Python语法、git diff --check；补丁对实际官方Makefile无偏移应用成功。
 - 配置提交e83fe4ebf4640566448337eb15a23b3c5ee51a96已推送，本地和远程main SHA核对一致；push验证run36254769164已成功。
 - 新完整编译：https://github.com/yjy116/BE3600Pro/actions/runs/36254780793，workflow_dispatch、config_only=false，目标提交e83fe4e。
+- 新run的validate及真实准备/defconfig步骤均成功，已进入Compile and verify firmware；升级补丁、主题补包及原默认/请求包保留检查通过。
 - 本轮新固件尚待完整编译结果；未执行实机、旧数据库迁移或eBPF运行验证。
