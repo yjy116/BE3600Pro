@@ -1,11 +1,11 @@
 # Progress
 
 ## Recovery
-- 当前：上一版完整编译成功；按用户新要求，DAED从归档源方案改为kenzok8维护项目，正在整合配套LuCI并重新验证。
+- 当前：kenzok8维护源迁移已推送，Linux 48项测试全部通过；新完整构建run36255985960已启动。
 - 用户已确认：插件与 AX6600 相同，公开仓库。
 - 本地目录原为空，gh 已认证 yjy116；无可用 WSL Linux，实际编译放在 GitHub Actions Ubuntu runner。
 - 只读参考克隆：.reference/ax6600（已 gitignore）。
-- 下一步：完成维护源定向安装器的Linux验证，重新派发完整构建，核对DAED/Aurora实际版本和独立DAE排除项。
+- 下一步：跟踪run36255985960的真实配置与完整编译，核对DAED/Aurora实际版本和独立DAE排除项。
 
 ## 已核实与用户调整
 - owrt cde43ee0d73bef295a96d3a29fe499d69232b448：qualcommbe/ipq53xx，p8。
@@ -90,3 +90,7 @@
 - 保留PoE、Gecoos、Aurora和192.168.70.1；Geo周更与新服务读取路径兼容，旧数据库迁移仍待实机验证。
 - run36254780793已确认cancelled，因维护源需求调整主动取消。
 - 本地整合48项测试：46通过、2项真实符号链接测试因Windows权限不足明确跳过；Linux CI必须完整执行。actionlint、Bash/Python语法与diff检查通过。
+- 配置提交34fb4b6efb9ec5c8a84cdb419067a7eceed393ad已推送，本地与远程main SHA一致。
+- push验证run36255945821成功：Linux实际48项全部通过（2.374秒，无跳过），包含两项真实symlink操作。
+- 新完整构建：https://github.com/yjy116/BE3600Pro/actions/runs/36255985960，config_only=false，编译目标提交34fb4b6。
+- 新run的真实Prepare/defconfig检查通过，已进入Compile and verify firmware；原默认与核心包保留、只选DAED及新recipe集成通过配置验收，最终编译与manifest仍待结果。
