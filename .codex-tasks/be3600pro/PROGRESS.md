@@ -1,11 +1,11 @@
 # Progress
 
 ## Recovery
-- 当前：阶段 3，应用配置已通过前轮真实defconfig；192.168.70.1最终配置已推送并启动编译。
+- 当前：阶段 3，按用户要求用最新Node24工作流重新启动完整编译。
 - 用户已确认：插件与 AX6600 相同，公开仓库。
 - 本地目录原为空，gh 已认证 yjy116；无可用 WSL Linux，实际编译放在 GitHub Actions Ubuntu runner。
 - 只读参考克隆：.reference/ax6600（已 gitignore）。
-- 下一步：跟踪run 36245537360，检查编译与固件产物；如失败保留日志并定位根因。
+- 下一步：跟踪run 36246077535，检查编译与固件产物；如失败保留日志并定位根因。
 
 ## 已核实与用户调整
 - owrt cde43ee0d73bef295a96d3a29fe499d69232b448：qualcommbe/ipq53xx，p8。
@@ -59,3 +59,10 @@
 - 已核对run 36245100934真实build.config：不存在QModem配置；luci-proto-modemmanager、modemmanager、sms-tool均未选中。
 - 固定owrt提交完整树检索也无QModem；保持当前有效插件配置，明确记录排除要求，不为未选择的软件包重启编译。
 - 新run 36245730318实际build.config再次验证：选中QModem包列表为空；PoE、Gecoos AC前后端及中文包已选中。
+
+## 用户要求重新编译
+- 使用最新配置提交c5be9bea64703fb3ffd8dff2eeeda99893cf9877；工作区干净，本地与远程main一致。
+- 已请求取消旧Node20工作流run 36245537360，避免重复完整编译。
+- 新完整构建：https://github.com/yjy116/BE3600Pro/actions/runs/36246077535
+- workflow_dispatch，config_only=false；PoE与Gecoos AC保留，QModem排除，默认地址192.168.70.1。
+- 仅确认新运行已创建，最终固件产物仍待实际编译结果。
