@@ -1,11 +1,11 @@
 # Progress
 
 ## Recovery
-- 当前：用户要求扩展为DAE/DAED双后端，旧单后端构建run36255985960已取消；正在补齐维护源的互斥逻辑并重新验证。
+- 当前：双后端与互斥修复已推送04330f5，Linux 70项测试无跳过全部通过；新完整构建run36258523947的真实配置检查已通过，正在编译固件。
 - 用户已确认：插件与 AX6600 相同，公开仓库。
 - 本地目录原为空，gh 已认证 yjy116；无可用 WSL Linux，实际编译放在 GitHub Actions Ubuntu runner。
 - 只读参考克隆：.reference/ax6600（已 gitignore）。
-- 下一步：完成双后端互斥测试、提交并启动新完整构建；核对两后端、统一LuCI与Aurora版本，保留PoE/Gecoos和70.1地址。
+- 下一步：跟踪run36258523947真实配置与完整编译；核对两后端、统一LuCI与Aurora版本，保留PoE/Gecoos和70.1地址。
 
 ## 已核实与用户调整
 - owrt cde43ee0d73bef295a96d3a29fe499d69232b448：qualcommbe/ipq53xx，p8。
@@ -105,3 +105,7 @@
 - 配置与manifest测试先验证旧DAE排除规则会失败，再改为双后端必需、旧管理入口排除；26项配置/产物测试及10项版本测试通过。
 - 两后台完整recipe已同步替换，原feed源码保留；新增统一启动锁、选择复核、切换持久化禁用、严格RPC错误、guard尾阶段重复停止保护和共享网络清理锁。DAE正常SIGTERM已由真实核心源码确认自行detach/netns.Close，异常强杀清理不作保证。
 - 本地最终验证：unittest报告70项、无失败、10条Windows跳过记录（Linux进程锁/信号与真实symlink权限）；耗时10.386秒，60秒硬超时。actionlint、Bash/Python语法、diff和Python文件/函数行限检查通过；待Linux完整执行。
+- 修复提交04330f58eb97a0a548edd0da3ad73cdf466d0f92已推送，本地与远程main已核对一致。统一diff文件的上下文空白按格式保留，新增源码空白检查与实际补丁应用检查通过。
+- Linux push验证run36258486553成功：70项测试实际全部通过，4.568秒，无跳过，包含真实flock/exec/重复SIGTERM/锁释放与全部symlink场景。
+- 新完整编译：https://github.com/yjy116/BE3600Pro/actions/runs/36258523947，workflow_dispatch、config_only=false，目标提交04330f5；validate已成功，进入固件任务。
+- run36258523947的Prepare upstream and additive plugins已成功：真实源安装、互斥补丁、defconfig、双后端/flock/统一界面、原默认与PoE/Gecoos核心包及BTF选择均通过准备验收。当前Compile and verify firmware正在运行，最终manifest/镜像及实机运行仍未验证。
