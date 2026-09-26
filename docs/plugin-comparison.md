@@ -3,7 +3,7 @@
 审计日期：2026-09-26；2026-09-27 追加 Aurora 与 DAED 更新。目标为 `qualcommbe/ipq53xx` 的
 `xiaomi_be3600-pro-wired-p8`。上一版已完成固件编译；新增主题和版本更新仍以新构建结果为准，尚未实机验证。
 
-用户最终选择：保留并更新 DAED；排除独立 DAE、USB 打印，以及 qBittorrent、Samba、Mini Diskmanager、Partexp 四项 NAS 应用。不增加 Argon；按最新要求恢复源 CI 的 Aurora 主题及设置插件，同时保留 Bootstrap 包。下文保留 AX6600 原 27 个应用的比较记录，排除上述 6 项后选择 21 个：官方 LuCI feeds 15 个，外部补充 6 个。Aurora 两包另行添加，不计入这 21 个 AX6600 应用。
+用户最终选择：保留并更新 DAED，使用持续维护的 kenzok8 来源；排除独立 DAE、USB 打印，以及 qBittorrent、Samba、Mini Diskmanager、Partexp 四项 NAS 应用。不增加 Argon；恢复源 CI 的 Aurora 主题及设置插件，同时保留 Bootstrap 包。下文保留 AX6600 原 27 个应用的比较记录，排除上述 6 项后保留 21 项应用功能：14 项沿用官方 LuCI feeds，7 项使用外部来源（含 DAED 迁移）。Aurora 两包另行添加。
 
 不追加 `qbittorrent`、`p910nd`、`kmod-usb-printer` 后端或驱动，不拉取 Mini Diskmanager、Partexp 外源。原始设备已有的存储、文件系统与 USB 基础包继续保留。
 
@@ -38,7 +38,7 @@
 | 类别 | 数量 | 本次策略 |
 | --- | ---: | --- |
 | 原始 owrt/p8 默认已启用 | 0 | 原有 PoE、防火墙等应用继续保留，但不属于这 27 项 |
-| 官方 LuCI feed 有定义，原始默认未启用 | 19 | 最终选择 15 项；排除 DAE、USB 打印、qBittorrent、Samba |
+| 官方 LuCI feed 有定义，原始默认未启用 | 19 | 保留 15 项功能：14 项用官方包，DAED 迁移维护源；排除 DAE、USB 打印、qBittorrent、Samba |
 | 官方 LuCI feed 与原始源码均无定义 | 8 | 最终补充 6 项；排除 Mini Diskmanager、Partexp 及其外源 |
 
 官方 feeds 已有的 19 个参考应用如下，其中 15 项纳入最终选择。此表中的“启用”表示本次应追加的构建选择；不代表相关服务已经在设备上启动或验证。
@@ -49,7 +49,7 @@
 | `luci-app-autoreboot` | feeds 可用，未默认启用 | 启用官方包 |
 | `luci-app-cpufreq` | feeds 可用，仅后端默认已有 | 启用官方前端 |
 | `luci-app-dae` | feeds 可用，未默认启用 | 按最终要求排除，不添加独立 DAE 应用 |
-| `luci-app-daed` | feeds 可用，未默认启用 | 保留官方 LuCI；后端定向更新为正式版 2.1.1，见版本说明 |
+| `luci-app-daed` | feeds 可用，未默认启用 | 迁移为 kenzok8 的 `luci-app-daede` + `daed`，只选 DAED 后端；旧 LuCI 不安装 |
 | `luci-app-ddns-go` | feeds 可用，未默认启用 | 启用官方包 |
 | `luci-app-homeproxy` | feeds 可用，未默认启用 | 启用官方包及其依赖 |
 | `luci-app-openclash` | feeds 可用，未默认启用 | 启用官方包 |
@@ -94,7 +94,7 @@
 
 用户另外明确不需要 QModem。当前 `Config/sources.json` 没有 QModem 来源，插件配置没有 QModem 选择，已生成的真实 `.config` 也没有任何 QModem 包；因此保持其未引入、未选择状态，不为此重启正在进行的固件编译。
 
-AX6600 本地 `package/dae` 使用 `olicesx/dae:kdae`、自定义 outbound 和动态 Go 依赖，另有本地 `luci-app-dae`、`v2ray-geodata` 覆盖包。本次原有包优先，不复制这些覆盖包，也不删除 feeds 中同名包。用户另要求检查和更新 DAED：保留官方 recipe 的服务与依赖规则，只对 DAED 后端应用 2.1.1 升级补丁，详见 [DAED 版本说明](daed-version.md)。保留 DAED 所需的 eBPF/BTF 等实际内核能力，不能整段移植旧 `qualcommax` 内核配置。独立 DAE 不作显式构建选择；必要依赖仍以官方包定义为准。
+AX6600 本地 `package/dae` 使用 `olicesx/dae:kdae`、自定义 outbound 和动态 Go 依赖，另有本地 `luci-app-dae`、`v2ray-geodata` 覆盖包。本次不复制这些覆盖包。用户要求采用正常维护的 DAED：固定 `kenzok8/openwrt-daede` 提交，替换官方 DAED recipe 的安装链接，完整保留该维护源的后台补丁、服务脚本与配套 LuCI，详见 [DAED 版本说明](daed-version.md)。不删除原 feed 源码，不安装独立 DAE；保留实际 eBPF/BTF 内核能力，不移植旧 `qualcommax` 内核配置。
 
 ## 原始源码与独立 CI 配置的区别
 
@@ -102,6 +102,6 @@ AX6600 本地 `package/dae` 使用 `olicesx/dae:kdae`、自定义 outbound 和�
 
 ## 验证状态与交付证据
 
-已完成源码默认包、官方 LuCI 包定义和 AX6600 选择项的静态比较。[上一版 run 36246077535](https://github.com/yjy116/BE3600Pro/actions/runs/36246077535) 完整编译及固件校验成功并发布 Release；其 manifest 确认包含 PoE、中文、交换机驱动及 Gecoos AC，DAED 为 1.27.0-r1。Aurora 与 DAED 2.1.1 的本轮新增配置需要重新编译验证。未执行 BE3600 Pro Wired p8 刷机、启动、PoE、交换端口、硬件加速或代理功能实机验证。
+已完成源码默认包、官方 LuCI 包定义和 AX6600 选择项的静态比较。[上一版 run 36246077535](https://github.com/yjy116/BE3600Pro/actions/runs/36246077535) 完整编译及固件校验成功并发布 Release；其 manifest 确认包含 PoE、中文、交换机驱动及 Gecoos AC，DAED 为 1.27.0-r1。曾启动的归档源 v2.1.1 构建因用户改选维护源而取消；Aurora 与 kenzok8 DAED 的配置需要重新编译验证。未执行 BE3600 Pro Wired p8 刷机、启动、PoE、交换端口、硬件加速或代理功能实机验证。
 
 后续构建须保存实际 `.config`、源码/feeds/外部包提交、构建日志、manifest、校验文件与镜像信息，并核对：原 PoE 应用及中文、RTL837x 驱动仍在；原设备/分区/驱动布局未被定制脚本改写；21 个追加应用及 Aurora 两包没有被 `make defconfig` 静默丢弃；被排除的 6 个参考应用及 qBittorrent/打印配套包未被显式加入；DAED 与 Aurora 版本符合声明。Aurora 自带首次初始化规则设置主题，保留配置升级可能沿用已有主题。编译结果和硬件运行结果分别报告，不能相互替代。

@@ -8,10 +8,10 @@
 
 ## 插件策略
 
-- [完整对比与来源](docs/plugin-comparison.md)：AX6600 的 21 个选用应用中，15 个使用官方 LuCI feed，6 个补充外部来源；另添加 Aurora 主题及设置插件。
+- [完整对比与来源](docs/plugin-comparison.md)：保留 AX6600 的 21 项选用应用功能，14 项使用官方 LuCI feed，7 项使用外部来源（含迁移后的 DAED）；另添加 Aurora 主题及设置插件。
 - [新增包列表](Config/plugins.config)、[功能配置](Config/features.config)、[源码提交](Config/sources.json) 分别维护。
-- 官方已有 HomeProxy、OpenClash、Passwall 等包保持原实现，不复制 AX6600 的覆盖版本。DAED 按用户要求，从官方 feed 的 1.27.0 定向升级至项目正式版 2.1.1，保留官方 LuCI 和启动脚本；[版本差异及来源说明](docs/daed-version.md)。
-- 外部来源仅补缺失 recipe。不修改设备 DTS、镜像规则、NSS 或分区，不迁移 AX6600 的 Wi-Fi 配置。
+- 官方已有 HomeProxy、OpenClash、Passwall 等包保持原实现。DAED 按用户要求迁移至持续维护的 `kenzok8/openwrt-daede`：后端 `2026.09.24-r2`，配套 `luci-app-daede` 为 `1.15-r6`；只选 DAED，不安装独立 DAE；[版本差异及来源说明](docs/daed-version.md)。
+- 外部来源通常只补缺失 recipe；DAED 是明确授权的定向替换，保留其完整维护补丁和服务脚本。不修改设备 DTS、镜像规则、NSS 或分区，不迁移 AX6600 的 Wi-Fi 配置。
 - Tailscale 的界面与后端都提供同名配置/启动文件；保留官方后端二进制版本，明确让新增 LuCI 包拥有这两个文件，变更记录在构建日志中。
 - GeoIP/Geosite 初始数据继续使用上游包；单独提供更新脚本，保留 AX6600 的周日 04:00 更新安排。下载或 SHA256 校验失败直接失败，不使用代理回退下载。
 

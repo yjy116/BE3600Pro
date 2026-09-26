@@ -1,11 +1,11 @@
 # Progress
 
 ## Recovery
-- 当前：上一版完整编译成功；Aurora恢复和DAED 2.1.1升级已推送，run 36254780793正在执行新的完整构建。
+- 当前：上一版完整编译成功；按用户新要求，DAED从归档源方案改为kenzok8维护项目，正在整合配套LuCI并重新验证。
 - 用户已确认：插件与 AX6600 相同，公开仓库。
 - 本地目录原为空，gh 已认证 yjy116；无可用 WSL Linux，实际编译放在 GitHub Actions Ubuntu runner。
 - 只读参考克隆：.reference/ax6600（已 gitignore）。
-- 下一步：跟踪run 36254780793，核对真实defconfig、编译及五个指定包版本；失败时检查日志，不回退旧版掩盖问题。
+- 下一步：完成维护源定向安装器的Linux验证，重新派发完整构建，核对DAED/Aurora实际版本和独立DAE排除项。
 
 ## 已核实与用户调整
 - owrt cde43ee0d73bef295a96d3a29fe499d69232b448：qualcommbe/ipq53xx，p8。
@@ -80,3 +80,13 @@
 - 新完整编译：https://github.com/yjy116/BE3600Pro/actions/runs/36254780793，workflow_dispatch、config_only=false，目标提交e83fe4e。
 - 新run的validate及真实准备/defconfig步骤均成功，已进入Compile and verify firmware；升级补丁、主题补包及原默认/请求包保留检查通过。
 - 本轮新固件尚待完整编译结果；未执行实机、旧数据库迁移或eBPF运行验证。
+
+## 维护项目迁移
+- 用户要求从1.27.0实际升级至1.28.0或更高，并检查正常维护的fork；进一步明确询问kenzok8/openwrt-daede。
+- QiuSimons和daeuniverse/daed均已归档。kenzok8有9月24至25日人工修复及16个SDK构建成功证据，选择固定SHA0b0e5d671e5748a060fbd79abc2f73733b09f902。
+- 后端2026.09.24-r2、配套LuCI1.15-r6；已实际下载冻结源并校验527bb166...，读取其中前端package.json为1.28.0。
+- 采用完整维护recipe/patches/guard/cleanup，停止使用旧002-daed-2.1.1.patch；已请求取消归档源run36254780793。
+- 只选择DAED后端；定向替换旧recipe链接，保留feed源码；相邻dae只复制LuCI打包所需配置资源，不复制Makefile。
+- 保留PoE、Gecoos、Aurora和192.168.70.1；Geo周更与新服务读取路径兼容，旧数据库迁移仍待实机验证。
+- run36254780793已确认cancelled，因维护源需求调整主动取消。
+- 本地整合48项测试：46通过、2项真实符号链接测试因Windows权限不足明确跳过；Linux CI必须完整执行。actionlint、Bash/Python语法与diff检查通过。

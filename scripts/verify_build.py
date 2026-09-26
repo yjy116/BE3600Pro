@@ -21,6 +21,7 @@ CRITICAL_PACKAGES = frozenset({
     "luci-app-tmi-poe", "luci-i18n-tmi-poe-zh-cn", "kmod-dsa-rtl837x",
     "luci-app-gecoosac", "gecoosac",
 })
+FORBIDDEN_PACKAGES = frozenset({"dae", "luci-app-dae", "luci-app-daed"})
 HASH_CHUNK_BYTES = 1024 * 1024
 FAILURE_EXIT_CODE = 1
 
@@ -31,16 +32,22 @@ def text_lines(path):
 
 def selected_packages(path):
     matches = (PACKAGE_PATTERN.fullmatch(line.strip()) for line in text_lines(path))
-    # PassWall suboptions configure a package; they are not package names.
+    # LuCI backend/feature suboptions configure packages; they are not package names.
     return frozenset(match.group(1) for match in matches
                      if match and "_INCLUDE_" not in match.group(1)
-                     and not match.group(1).startswith("luci-app-passwall_"))
+                     and not match.group(1).startswith(("luci-app-passwall_", "luci-app-daede_")))
 
 
 def require_packages(expected, actual, context):
     missing = expected - actual
     if missing:
         raise ValueError(f"{context}: missing packages: {', '.join(sorted(missing))}")
+
+
+def reject_legacy_dae(actual):
+    forbidden = FORBIDDEN_PACKAGES & actual
+    if forbidden:
+        raise ValueError("Excluded DAE or legacy DAED packages: " + ", ".join(sorted(forbidden)))
 
 
 def boolean_options(path):
@@ -74,6 +81,7 @@ def verify_config(arguments):
         raise ValueError(f"Expected only device {DEVICE_SYMBOL}; selected: "
                          f"{', '.join(sorted(devices)) or '(none)'}")
     actual = selected_packages(arguments.actual)
+    reject_legacy_dae(actual)
     baseline = selected_packages(arguments.baseline)
     requested = selected_packages(arguments.requested)
     require_packages(baseline, actual, "Baseline preservation")
@@ -210,6 +218,7 @@ def verify_firmware(arguments):
     expected = selected_packages(arguments.requested) | CRITICAL_PACKAGES | frozenset(versions)
     for path in manifests:
         installed = manifest_versions(path)
+        reject_legacy_dae(frozenset(installed))
         require_packages(expected, frozenset(installed), f"Manifest {path.name}")
         verify_versions(versions, installed, path)
     print(f"Firmware verified for {PROFILE}: both image formats present, "

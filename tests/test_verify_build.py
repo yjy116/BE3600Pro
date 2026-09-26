@@ -66,11 +66,18 @@ class BuildVerificationTests(unittest.TestCase):
         options = (
             "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Haproxy=y\n"
             "CONFIG_PACKAGE_luci-app-passwall_Nftables_Transparent_Proxy=y\n"
+            "CONFIG_PACKAGE_luci-app-daede_daed=y\n"
             "CONFIG_PACKAGE_optional-module=m\n"
         )
         self.write("plugins.config", REQUESTED + options)
         result = self.config(VALID_CONFIG, baseline=BASELINE + options)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_config_rejects_standalone_dae_and_legacy_daed_ui(self):
+        for package in ("dae", "luci-app-dae", "luci-app-daed"):
+            with self.subTest(package=package):
+                result = self.config(VALID_CONFIG + f"CONFIG_PACKAGE_{package}=y\n")
+                self.assert_rejected(result, "Excluded DAE or legacy DAED packages: " + package)
 
     def test_config_rejects_lost_default_even_when_replaced(self):
         result = self.config(VALID_CONFIG.replace("tc-tiny=y", "tc-full=y"))

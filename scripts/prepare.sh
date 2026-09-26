@@ -13,13 +13,14 @@ git -C "$WRT_DIR" checkout --detach FETCH_HEAD
 cd "$WRT_DIR"
 patch -p1 < "$ROOT/patches/001-default-lan-address.patch"
 ./scripts/feeds update -a
-patch --directory=feeds/packages -p1 --fuzz=0 < "$ROOT/patches/002-daed-2.1.1.patch"
 ./scripts/feeds install -a
 cp "$ROOT/Config/device.config" .config
 make defconfig
 cp .config "$EVIDENCE/upstream-default.config"
 python3 "$ROOT/scripts/add_packages.py" --source "$WRT_DIR" \
     --lock "$ROOT/Config/sources.json" --evidence "$EVIDENCE/extra-sources.json"
+python3 "$ROOT/scripts/install_daede.py" --source "$WRT_DIR" \
+    --lock "$ROOT/Config/sources.json" --evidence "$EVIDENCE/daede-source.json"
 
 # This LuCI frontend owns the service config/init files, as in AX6600.
 # Keep the upstream Tailscale binary recipe and version.

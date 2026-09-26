@@ -8,6 +8,11 @@
     "url": "https://github.com/yjy116/Immortalwrt-CI-JDC-AX6600",
     "sha": "696912e6c18113c91cdb5fe1c079c456cbc78cf2"
   },
+  "daede": {
+    "repo": "kenzok8/openwrt-daede",
+    "branch": "main",
+    "sha": "0b0e5d671e5748a060fbd79abc2f73733b09f902"
+  },
   "extras": [
     {
       "repo": "eamonxg/luci-theme-aurora",
