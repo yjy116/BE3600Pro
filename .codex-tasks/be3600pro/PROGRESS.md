@@ -1,11 +1,11 @@
 # Progress
 
 ## Recovery
-- 当前：上一版完整编译成功；按2026-09-27用户要求恢复Aurora并核查DAED更新后重新编译。
+- 当前：上一版完整编译成功；Aurora恢复和DAED 2.1.1升级已推送，run 36254780793正在执行新的完整构建。
 - 用户已确认：插件与 AX6600 相同，公开仓库。
 - 本地目录原为空，gh 已认证 yjy116；无可用 WSL Linux，实际编译放在 GitHub Actions Ubuntu runner。
 - 只读参考克隆：.reference/ax6600（已 gitignore）。
-- 下一步：固定Aurora主题及设置来源，查明DAED版本差异，验证修改并推送后启动新完整构建。
+- 下一步：跟踪run 36254780793，核对真实defconfig、编译及五个指定包版本；失败时检查日志，不回退旧版掩盖问题。
 
 ## 已核实与用户调整
 - owrt cde43ee0d73bef295a96d3a29fe499d69232b448：qualcommbe/ipq53xx，p8。
@@ -76,4 +76,6 @@
 - 独立审查补充unzip -o，避免重新prepare时旧的源码顶层文件触发交互式覆盖提示。
 - 新增真实manifest精确版本验收：DAED三包和Aurora两包必须符合声明，不能误用旧包；版本声明和feed补丁同时保存在构建证据。
 - 整合复验通过：33项测试5.010秒（60秒硬超时）、actionlint、Bash/Python语法、git diff --check；补丁对实际官方Makefile无偏移应用成功。
-- 新完整编译尚未启动，未执行实机测试。
+- 配置提交e83fe4ebf4640566448337eb15a23b3c5ee51a96已推送，本地和远程main SHA核对一致；push验证run36254769164已成功。
+- 新完整编译：https://github.com/yjy116/BE3600Pro/actions/runs/36254780793，workflow_dispatch、config_only=false，目标提交e83fe4e。
+- 本轮新固件尚待完整编译结果；未执行实机、旧数据库迁移或eBPF运行验证。

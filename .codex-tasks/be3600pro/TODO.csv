@@ -4,4 +4,4 @@ id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,n
 3,创建公开仓库并执行编译,DONE,提交推送且实际 Actions 运行,gh run view 与本地远程 SHA 对比,2026-09-27,0,run 36246077535已成功并发布Release
 4,核查固件产物并交付,DONE,目标镜像及插件 manifest 校验通过,Actions 日志与固件校验和,2026-09-27,0,run 36246077535编译及校验成功；已下载manifest核对PoE与Gecoos；实机未验证
 5,修复Actions Node20弃用警告,DONE,checkout和artifact原生Node24且新run无弃用警告,Action元数据与真实Actions annotations,2026-09-26,0,run 36245730318配置和上传成功；两job annotations均为空
-6,恢复Aurora并核查更新DAED,IN_PROGRESS,固定上游来源且通过配置和固件验收,源码版本与Actions产物核查,,0,恢复主题及设置；比较DAED官方feed和AX6600来源后重新编译
+6,恢复Aurora并核查更新DAED,IN_PROGRESS,固定上游来源且通过配置和固件验收,源码版本与Actions产物核查,,0,e83fe4e已推送；33项测试通过；新完整run36254780793待结果
