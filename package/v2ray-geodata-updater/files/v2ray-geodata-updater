@@ -1,0 +1,27 @@
+#!/bin/sh
+set -eu
+
+download_dir=$(mktemp -d /tmp/v2ray-geodata.XXXXXX)
+trap 'rm -rf "$download_dir"' EXIT
+trap 'exit 1' HUP INT TERM
+
+fetch_verified() {
+    file=$1
+    repository=$2
+    url="https://github.com/$repository/releases/latest/download/$file"
+    curl --fail --show-error --location "$url" -o "$download_dir/$file"
+    curl --fail --show-error --location "$url.sha256sum" \
+        -o "$download_dir/$file.sha256sum"
+    expected=$(awk 'NR == 1 {print $1}' "$download_dir/$file.sha256sum")
+    actual=$(sha256sum "$download_dir/$file" | awk '{print $1}')
+    if [ "$expected" != "$actual" ]; then
+        echo "Checksum mismatch: $file" >&2
+        exit 1
+    fi
+}
+
+fetch_verified geoip.dat Loyalsoldier/geoip
+fetch_verified geosite.dat Loyalsoldier/v2ray-rules-dat
+mv "$download_dir/geoip.dat" /usr/share/v2ray/geoip.dat
+mv "$download_dir/geosite.dat" /usr/share/v2ray/geosite.dat
+logger -t v2ray-geodata-updater "GeoIP and Geosite checksums verified; update complete"

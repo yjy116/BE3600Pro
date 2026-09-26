@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+mkdir -p /etc/crontabs
+touch /etc/crontabs/root
+if ! grep -q '/bin/v2ray-geodata-updater' /etc/crontabs/root; then
+    echo '0 4 * * 0 /bin/v2ray-geodata-updater' >> /etc/crontabs/root
+fi

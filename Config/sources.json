@@ -1,0 +1,114 @@
+{
+  "firmware": {
+    "url": "https://github.com/VIKINGYFY/immortalwrt.git",
+    "branch": "owrt",
+    "sha": "cde43ee0d73bef295a96d3a29fe499d69232b448"
+  },
+  "ax6600": {
+    "url": "https://github.com/yjy116/Immortalwrt-CI-JDC-AX6600",
+    "sha": "696912e6c18113c91cdb5fe1c079c456cbc78cf2"
+  },
+  "extras": [
+    {
+      "repo": "nikkinikki-org/OpenWrt-nikki",
+      "branch": "main",
+      "sha": "7b203f6c4c5e94c6c0026acb301090aa1d310e7f",
+      "packages": [
+        {
+          "path": "luci-app-nikki",
+          "name": "luci-app-nikki"
+        },
+        {
+          "path": "nikki",
+          "name": "nikki"
+        },
+        {
+          "path": "mihomo-meta",
+          "name": "mihomo-meta"
+        }
+      ]
+    },
+    {
+      "repo": "VIKINGYFY/packages",
+      "branch": "main",
+      "sha": "cc061375a55e5acd2bdc0a88398787173af8d3c3",
+      "packages": [
+        {
+          "path": "gecoosac",
+          "name": "gecoosac"
+        },
+        {
+          "path": "luci-app-gecoosac",
+          "name": "luci-app-gecoosac"
+        },
+        {
+          "path": "luci-app-wolultra",
+          "name": "luci-app-wolultra"
+        }
+      ]
+    },
+    {
+      "repo": "4IceG/luci-app-mini-diskmanager",
+      "branch": "main",
+      "sha": "4b2b7332896063ef888f34da2187c3cc6f366037",
+      "packages": [
+        {
+          "path": "luci-app-mini-diskmanager",
+          "name": "luci-app-mini-diskmanager"
+        }
+      ]
+    },
+    {
+      "repo": "sirpdboy/luci-app-partexp",
+      "branch": "main",
+      "sha": "236187cfe4f1fab7f2dde5279ce378324c3e5f40",
+      "packages": [
+        {
+          "path": "luci-app-partexp",
+          "name": "luci-app-partexp"
+        }
+      ]
+    },
+    {
+      "repo": "asvow/luci-app-tailscale",
+      "branch": "main",
+      "sha": "534eb3f3acba24dac4e6fee9fa33049b004ef121",
+      "packages": [
+        {
+          "path": ".",
+          "name": "luci-app-tailscale"
+        }
+      ]
+    },
+    {
+      "repo": "EasyTier/luci-app-easytier",
+      "branch": "main",
+      "sha": "79b2b01ded627a634e4bea8d60c7be0f00b708b0",
+      "packages": [
+        {
+          "path": "luci-app-easytier",
+          "name": "luci-app-easytier"
+        },
+        {
+          "path": "easytier",
+          "name": "easytier"
+        }
+      ]
+    },
+    {
+      "repo": "gdy666/luci-app-lucky",
+      "branch": "main",
+      "sha": "c1730565c6df4ab30d345cf73584f03f5cc7bc8f",
+      "packages": [
+        {
+          "path": "luci-app-lucky",
+          "name": "luci-app-lucky"
+        },
+        {
+          "path": "lucky",
+          "name": "lucky"
+        }
+      ]
+    }
+  ]
+}
