@@ -1,0 +1,21 @@
+--- a/net/daed/Makefile
++++ b/net/daed/Makefile
+@@ -8 +8 @@
+-PKG_VERSION:=1.27.0
++PKG_VERSION:=2.1.1
+@@ -11,4 +11,5 @@
+-PKG_SOURCE_PROTO:=git
+-PKG_SOURCE_URL:=https://github.com/daeuniverse/daed.git
+-PKG_SOURCE_VERSION:=v$(PKG_VERSION)
+-PKG_MIRROR_HASH:=f848f70c6f1fb4fb43d6bfe14de81a5653ff6fa5e65ba0fd1f5970af97ed8739
++PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-full-src.zip
++PKG_SOURCE_URL:=https://github.com/daeuniverse/daed/releases/download/v$(PKG_VERSION)
++PKG_SOURCE_URL_FILE:=daed-full-src.zip
++PKG_HASH:=86a64e92a5d075f67938fb0c89126dc3067dc5fec8cfec6d16013f8d5f778f47
++PKG_UNPACK=unzip -q -o -d $(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION) $(DL_DIR)/$(PKG_SOURCE)
+@@ -36,2 +36,0 @@
+-
+-TAR_CMD=$(HOST_TAR) -C $(BUILD_DIR)/ $(TAR_OPTIONS)
+@@ -84 +83 @@
+-	HASH:=da8755fb2cabfab392854e807e385b12d9e9842d6c8b5e347284d1ae0e582bfc
++	HASH:=7eb8f42d4860ab7311f87bda2a921bad34a6d54db7edad47466dcb8d9382fea8

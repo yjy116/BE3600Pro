@@ -15,7 +15,8 @@ PACKAGE_PATTERN = re.compile(r"CONFIG_PACKAGE_([A-Za-z0-9][A-Za-z0-9+_.-]*)=y")
 BOOLEAN_PATTERN = re.compile(r"(CONFIG_[A-Za-z0-9_+.-]+)=([ymn])")
 DISABLED_PATTERN = re.compile(r"# (CONFIG_[A-Za-z0-9_+.-]+) is not set")
 CHECKSUM_PATTERN = re.compile(r"([a-fA-F0-9]{64}) [ *](.+)")
-MANIFEST_PATTERN = re.compile(r"([A-Za-z0-9][A-Za-z0-9+_.-]*)\s+-\s+\S.*")
+MANIFEST_PATTERN = re.compile(r"([A-Za-z0-9][A-Za-z0-9+_.-]*)\s+-\s+(\S+)")
+PACKAGE_NAME_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9+_.-]*")
 CRITICAL_PACKAGES = frozenset({
     "luci-app-tmi-poe", "luci-i18n-tmi-poe-zh-cn", "kmod-dsa-rtl837x",
     "luci-app-gecoosac", "gecoosac",
@@ -145,16 +146,53 @@ def verify_checksums(directory):
     return frozenset(verified)
 
 
-def manifest_packages(path):
-    packages = set()
+def manifest_versions(path):
+    packages = {}
     for number, line in enumerate(text_lines(path), start=1):
         if not line.strip():
             continue
         match = MANIFEST_PATTERN.fullmatch(line.strip())
         if not match:
             raise ValueError(f"Malformed manifest {path.name} at line {number}")
-        packages.add(match.group(1))
-    return frozenset(packages)
+        package, version = match.groups()
+        if package in packages:
+            raise ValueError(f"Duplicate manifest package: {package} in {path.name}")
+        packages[package] = version
+    return packages
+
+
+def unique_version_keys(pairs):
+    versions = {}
+    for package, version in pairs:
+        if package in versions:
+            raise ValueError(f"Duplicate package-version key: {package}")
+        versions[package] = version
+    return versions
+
+
+def requested_versions(path):
+    if path is None:
+        return {}
+    try:
+        versions = json.loads(path.read_text(encoding="utf-8-sig"),
+                              object_pairs_hook=unique_version_keys)
+    except json.JSONDecodeError as error:
+        raise ValueError(f"Invalid {path.name}: {error}") from error
+    if not isinstance(versions, dict) or not versions:
+        raise ValueError(f"{path.name} must contain a nonempty package-version object")
+    for package, version in versions.items():
+        if not PACKAGE_NAME_PATTERN.fullmatch(package):
+            raise ValueError(f"Invalid package name in {path.name}: {package}")
+        if not isinstance(version, str) or not re.fullmatch(r"\S+", version):
+            raise ValueError(f"Invalid package version for {package} in {path.name}")
+    return versions
+
+
+def verify_versions(expected, actual, path):
+    mismatches = tuple(f"{package}: expected {version}, got {actual.get(package, '(missing)')}"
+                       for package, version in expected.items() if actual.get(package) != version)
+    if mismatches:
+        raise ValueError(f"Manifest {path.name} version mismatch: " + "; ".join(mismatches))
 
 
 def verify_firmware(arguments):
@@ -168,11 +206,15 @@ def verify_firmware(arguments):
     missing = required_files - checked
     if missing:
         raise ValueError(f"Missing sha256sums records for: {', '.join(sorted(missing))}")
-    expected = selected_packages(arguments.requested) | CRITICAL_PACKAGES
+    versions = requested_versions(arguments.versions)
+    expected = selected_packages(arguments.requested) | CRITICAL_PACKAGES | frozenset(versions)
     for path in manifests:
-        require_packages(expected, manifest_packages(path), f"Manifest {path.name}")
+        installed = manifest_versions(path)
+        require_packages(expected, frozenset(installed), f"Manifest {path.name}")
+        verify_versions(versions, installed, path)
     print(f"Firmware verified for {PROFILE}: both image formats present, "
-          f"{len(checked)} files SHA-256 checked, {len(expected)} required packages installed.")
+          f"{len(checked)} files SHA-256 checked, {len(expected)} required packages installed; "
+          f"{len(versions)} package versions verified.")
 
 
 def parser():
@@ -188,6 +230,8 @@ def parser():
     firmware = commands.add_parser("firmware", help="Verify generated images and package manifests")
     firmware.add_argument("--directory", type=Path, required=True)
     firmware.add_argument("--requested", type=Path, required=True)
+    firmware.add_argument("--versions", type=Path,
+                          help="JSON object mapping package names to exact manifest versions")
     firmware.set_defaults(verify=verify_firmware)
     return root
 

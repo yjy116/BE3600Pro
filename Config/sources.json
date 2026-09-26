@@ -10,6 +10,28 @@
   },
   "extras": [
     {
+      "repo": "eamonxg/luci-theme-aurora",
+      "branch": "master",
+      "sha": "84c27b66952e6fc4be60128067a6b88bfd34afb5",
+      "packages": [
+        {
+          "path": ".",
+          "name": "luci-theme-aurora"
+        }
+      ]
+    },
+    {
+      "repo": "eamonxg/luci-app-aurora-config",
+      "branch": "master",
+      "sha": "a5299ce0144859f47683ec3bc40805bf616f534f",
+      "packages": [
+        {
+          "path": ".",
+          "name": "luci-app-aurora-config"
+        }
+      ]
+    },
+    {
       "repo": "nikkinikki-org/OpenWrt-nikki",
       "branch": "main",
       "sha": "7b203f6c4c5e94c6c0026acb301090aa1d310e7f",

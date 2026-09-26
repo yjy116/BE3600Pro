@@ -4,13 +4,13 @@
 
 用途：**作为 AC 管理集客 AP**。PoE 管理（含中文）以及 Gecoos AC 前端和后端是核心功能，配置和最终固件均检查其存在。
 
-保留原默认软件、PoE 管理及中文包、PPE/交换机驱动、分区与镜像规则；对比 AX6600 后增补所需应用。保留 DAED，不加入独立 DAE、Aurora 或 Argon，继续使用上游 Bootstrap 默认主题。排除 QModem、雅典娜专用插件及 USB 打印、qBittorrent、Samba、Mini Diskmanager、Partexp。
+保留原默认软件、PoE 管理及中文包、PPE/交换机驱动、分区与镜像规则；对比 AX6600 后增补所需应用。保留 DAED，恢复上游 CI 使用的 Aurora 主题及设置插件，Bootstrap 包仍保留。不加入独立 DAE、Argon、QModem、雅典娜专用插件及 USB 打印、qBittorrent、Samba、Mini Diskmanager、Partexp。
 
 ## 插件策略
 
-- [完整对比与来源](docs/plugin-comparison.md)：21 个最终选用应用中，15 个使用官方 LuCI feed，6 个补充外部来源。
+- [完整对比与来源](docs/plugin-comparison.md)：AX6600 的 21 个选用应用中，15 个使用官方 LuCI feed，6 个补充外部来源；另添加 Aurora 主题及设置插件。
 - [新增包列表](Config/plugins.config)、[功能配置](Config/features.config)、[源码提交](Config/sources.json) 分别维护。
-- 官方已有 HomeProxy、DAED、OpenClash、Passwall 等包保持原实现，不复制 AX6600 的覆盖版本。
+- 官方已有 HomeProxy、OpenClash、Passwall 等包保持原实现，不复制 AX6600 的覆盖版本。DAED 按用户要求，从官方 feed 的 1.27.0 定向升级至项目正式版 2.1.1，保留官方 LuCI 和启动脚本；[版本差异及来源说明](docs/daed-version.md)。
 - 外部来源仅补缺失 recipe。不修改设备 DTS、镜像规则、NSS 或分区，不迁移 AX6600 的 Wi-Fi 配置。
 - Tailscale 的界面与后端都提供同名配置/启动文件；保留官方后端二进制版本，明确让新增 LuCI 包拥有这两个文件，变更记录在构建日志中。
 - GeoIP/Geosite 初始数据继续使用上游包；单独提供更新脚本，保留 AX6600 的周日 04:00 更新安排。下载或 SHA256 校验失败直接失败，不使用代理回退下载。
@@ -33,9 +33,11 @@ bash scripts/build.sh
 
 完整构建成功且检查通过后创建 Release，保留原文件名的 `sysupgrade.bin`、`factory.ubi`、manifest、`profiles.json`、`sha256sums` 和 buildinfo。实际配置、源码 SHA、feeds SHA、准备/下载/编译日志保存在 Actions artifact。
 
-检查会拒绝：错误机型、原默认包被丢弃、所需应用被 defconfig 丢弃、镜像或 PoE/Gecoos AC 核心包缺失、校验和不符。失败保留诊断资料，不发布假成功固件。
+检查会拒绝：错误机型、原默认包被丢弃、所需应用被 defconfig 丢弃、镜像或 PoE/Gecoos AC 核心包缺失、指定 DAED/Aurora 版本不符、校验和不符。失败保留诊断资料，不发布假成功固件。
 
 新固件默认管理地址为 **192.168.70.1/24**，只修改 LAN 初始默认值，保留主机名和登录密码规则。保留配置升级时已有 LAN 配置可能继续生效；恢复默认或首次安装使用新地址。应用内置不代表已配置服务；代理订阅、VPN 账户等由使用者设置。
+
+Aurora 使用源 CI 的 `eamonxg/luci-theme-aurora` 和 `eamonxg/luci-app-aurora-config`。全新配置由主题自带初始化脚本设为 Aurora；保留配置升级时，已有主题设置可能继续生效，可在 LuCI 中选择 Aurora。
 
 Gecoos AC 的上游默认配置为未启用，首次使用需在其管理页面启用并启动服务；后端使用端口 `60650`，配置数据库位于 `/etc/gecoosac`。PoE 的上游配置默认启用，p8 机型控制 7 个供电 LAN 口。这里描述源码默认值，实际 AP 接入和供电仍需设备验证。
 

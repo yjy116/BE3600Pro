@@ -1,11 +1,11 @@
 # Progress
 
 ## Recovery
-- 当前：阶段 3，按用户要求用最新Node24工作流重新启动完整编译。
+- 当前：上一版完整编译成功；按2026-09-27用户要求恢复Aurora并核查DAED更新后重新编译。
 - 用户已确认：插件与 AX6600 相同，公开仓库。
 - 本地目录原为空，gh 已认证 yjy116；无可用 WSL Linux，实际编译放在 GitHub Actions Ubuntu runner。
 - 只读参考克隆：.reference/ax6600（已 gitignore）。
-- 下一步：跟踪run 36246077535，检查编译与固件产物；如失败保留日志并定位根因。
+- 下一步：固定Aurora主题及设置来源，查明DAED版本差异，验证修改并推送后启动新完整构建。
 
 ## 已核实与用户调整
 - owrt cde43ee0d73bef295a96d3a29fe499d69232b448：qualcommbe/ipq53xx，p8。
@@ -66,3 +66,14 @@
 - 新完整构建：https://github.com/yjy116/BE3600Pro/actions/runs/36246077535
 - workflow_dispatch，config_only=false；PoE与Gecoos AC保留，QModem排除，默认地址192.168.70.1。
 - 仅确认新运行已创建，最终固件产物仍待实际编译结果。
+
+## 2026-09-27 恢复 Aurora 并升级 DAED
+- 已核实 run 36246077535 完整成功，编译/校验/发布全部通过；Release p8-36246077535 包含 p8 两种镜像及校验文件。
+- 已下载上一版 manifest 和 feeds.buildinfo；PoE、中文、RTL837x 与 Gecoos 前后端均在；DAED 三包实际为1.27.0-r1。
+- 恢复源 CI VIKINGYFY/OpenWRT-CI 使用的 eamonxg Aurora 主题1.4.0-r20260920及设置1.2.5-r20260920，固定提交；不删除原 Bootstrap。
+- DAED官方feed仍1.27.0；AX使用QiuSimons/kix，前端package.json标注1.28.0。最新正式v2.1.1前端也保留该数字，不能混同前端标注与后端包版本。
+- 对官方DAED recipe应用2.1.1定向补丁，采用正式版完整源码与web.zip，已下载校验两个SHA256；Go1.27满足源码Go1.26要求，CLI与eBPF生成参数核对兼容。
+- 独立审查补充unzip -o，避免重新prepare时旧的源码顶层文件触发交互式覆盖提示。
+- 新增真实manifest精确版本验收：DAED三包和Aurora两包必须符合声明，不能误用旧包；版本声明和feed补丁同时保存在构建证据。
+- 整合复验通过：33项测试5.010秒（60秒硬超时）、actionlint、Bash/Python语法、git diff --check；补丁对实际官方Makefile无偏移应用成功。
+- 新完整编译尚未启动，未执行实机测试。
