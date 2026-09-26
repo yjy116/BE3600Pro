@@ -1,0 +1,5 @@
+--- a/package/base-files/files/bin/config_generate
++++ b/package/base-files/files/bin/config_generate
+@@ -166 +166 @@
+-				lan) ipad=${ipaddr:-"192.168.1.1"} ;;
++				lan) ipad=${ipaddr:-"192.168.60.1"} ;;

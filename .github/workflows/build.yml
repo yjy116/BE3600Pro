@@ -66,6 +66,8 @@ jobs:
           cat > artifacts/release-notes.md <<'EOF'
           Xiaomi BE3600 Pro Wired **8 网口版 p8**，仅有线。
 
+          默认管理地址：192.168.60.1。
+
           保留 owrt 默认包及 PoE 管理，增补 AX6600 应用。原有包优先使用上游 feeds。
           manifest、profiles.json、sha256sums 与固件一同保留；配置与日志见本次 Actions artifact。
           编译及静态产物验证不代表实机验证；未执行刷机、PoE 供电或代理运行验证。

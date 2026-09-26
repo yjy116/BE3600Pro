@@ -11,6 +11,7 @@ git init "$WRT_DIR"
 git -C "$WRT_DIR" fetch --depth=1 "$SOURCE_URL" "$SOURCE_SHA"
 git -C "$WRT_DIR" checkout --detach FETCH_HEAD
 cd "$WRT_DIR"
+patch -p1 < "$ROOT/patches/001-default-lan-address.patch"
 ./scripts/feeds update -a
 ./scripts/feeds install -a
 cp "$ROOT/Config/device.config" .config
