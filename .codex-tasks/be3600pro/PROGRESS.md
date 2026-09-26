@@ -1,11 +1,11 @@
 # Progress
 
 ## Recovery
-- 当前：阶段 3，应用配置已通过真实defconfig；最终管理IP改为192.168.70.1，准备重启构建。
+- 当前：阶段 3，应用配置已通过前轮真实defconfig；192.168.70.1最终配置已推送并启动编译。
 - 用户已确认：插件与 AX6600 相同，公开仓库。
 - 本地目录原为空，gh 已认证 yjy116；无可用 WSL Linux，实际编译放在 GitHub Actions Ubuntu runner。
 - 只读参考克隆：.reference/ax6600（已 gitignore）。
-- 下一步：推送70.1默认地址，跟踪对应最新run，检查真实配置与编译结果。
+- 下一步：跟踪run 36245537360，检查编译与固件产物；如失败保留日志并定位根因。
 
 ## 已核实与用户调整
 - owrt cde43ee0d73bef295a96d3a29fe499d69232b448：qualcommbe/ipq53xx，p8。
@@ -39,3 +39,6 @@
 - 已下载该run配置再次使用强化验收器验证：210项原默认包保留、40项请求包及5项PoE/Gecoos核心包均选择成功。
 - feed元数据存在未选择bmx7/librespeed等依赖警告，准备步骤成功，未隐藏日志；完整编译结果仍待验证。
 - 用户将管理IP进一步改为192.168.70.1，原60.1构建36245460911也主动取消；70.1为最终生效需求。
+- 最终地址提交：d3dcf8fd7d851ba4a6adbbe8ea7959a127a9e22d，本地与远程main一致。
+- 最新完整构建：https://github.com/yjy116/BE3600Pro/actions/runs/36245537360
+- 70.1补丁已对固定上游文件实际应用、检查新值并通过sh语法；workflow actionlint通过。
