@@ -42,3 +42,9 @@
 - 最终地址提交：d3dcf8fd7d851ba4a6adbbe8ea7959a127a9e22d，本地与远程main一致。
 - 最新完整构建：https://github.com/yjy116/BE3600Pro/actions/runs/36245537360
 - 70.1补丁已对固定上游文件实际应用、检查新值并通过sh语法；workflow actionlint通过。
+
+## Node.js Actions 弃用警告
+- 用户截图来自run 36245537360的validate注释，明确为Node20弃用警告，validate本身成功。
+- 根因：两处checkout v4和upload-artifact v4的action.yml都声明node20；GitHub现强制它们使用Node24。
+- 修复：改用官方原生Node24版本并固定完整提交SHA；不增加强制旧版本或隐藏警告环境变量。
+- 当前完整固件编译保持运行，另用config_only验证新的checkout和artifact上传。插件及70.1默认地址不变。

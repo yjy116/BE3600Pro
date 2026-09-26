@@ -3,3 +3,4 @@ id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,n
 2,实现单机型构建仓库,DONE,配置和脚本迁移完成且保留设备布局,本地语法与配置契约验证,2026-09-26,0,23项验收测试和actionlint通过
 3,创建公开仓库并执行编译,IN_PROGRESS,提交推送且实际 Actions 运行,gh run view 与本地远程 SHA 对比,,0,先前run因需求调整取消；最终70.1 run 36245537360待结果
 4,核查固件产物并交付,TODO,目标镜像及插件 manifest 校验通过,Actions 日志与固件校验和,,0,实机验证不在本次范围
+5,修复Actions Node20弃用警告,IN_PROGRESS,checkout和artifact原生Node24且新run无弃用警告,Action元数据与真实Actions annotations,,0,旧run不变更；新配置验证检查checkout和upload
