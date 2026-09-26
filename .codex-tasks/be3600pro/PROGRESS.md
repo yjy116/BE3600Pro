@@ -48,3 +48,14 @@
 - 根因：两处checkout v4和upload-artifact v4的action.yml都声明node20；GitHub现强制它们使用Node24。
 - 修复：改用官方原生Node24版本并固定完整提交SHA；不增加强制旧版本或隐藏警告环境变量。
 - 当前完整固件编译保持运行，另用config_only验证新的checkout和artifact上传。插件及70.1默认地址不变。
+- 修复提交f50bbfa52a4afc60baed147647dde44ca23f913a已推送，本地/远程main一致。
+- push run 36245727885已成功；配置验证run 36245730318的validate通过，annotations为空，artifact上传仍待结果。
+- 最终验证：run 36245730318成功，checkout、真实defconfig和upload-artifact全部通过；validate与firmware两个job的annotations均为空。
+- 已实际下载新artifact（131664 bytes）并用本地验收器检查：210项原默认包保留、40项请求包和5项PoE/Gecoos核心包均存在；70.1补丁记录正确。
+- 此run为config_only，明确跳过完整编译；完整固件仍由run 36245537360继续。
+
+## QModem 排除核查
+- 用户要求检查去掉QModem。当前源码锁定清单、插件配置、补包脚本均没有引入它。
+- 已核对run 36245100934真实build.config：不存在QModem配置；luci-proto-modemmanager、modemmanager、sms-tool均未选中。
+- 固定owrt提交完整树检索也无QModem；保持当前有效插件配置，明确记录排除要求，不为未选择的软件包重启编译。
+- 新run 36245730318实际build.config再次验证：选中QModem包列表为空；PoE、Gecoos AC前后端及中文包已选中。

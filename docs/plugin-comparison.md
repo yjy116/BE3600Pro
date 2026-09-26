@@ -89,7 +89,9 @@
 | `luci-theme-aurora` | 官方 LuCI feed 无定义 | 按最终要求不添加，也不拉取 Aurora 来源 |
 | `luci-proto-wireguard`、`luci-proto-relay` | AX6600 的额外协议选择 | 单独核对并追加，不替换原 IPv6/PPP 协议 |
 
-不执行 AX6600 脚本中的全局主题替换，也不照搬其主机名、LAN 地址或无线设置。按用户要求，排除 AX6600 专用 `luci-app-athena-led`（雅典娜 LED 屏幕插件）和 `files/etc/uci-defaults/99-athena-led-config-migration` 迁移脚本，不为 BE3600 Pro Wired 添加这些设备专属内容。AX6600 下载了但没有显式选择的 `momo、passwall2、kucat、diskman、mosdns、openlist2、qmodem、quickfile、vnt、pushbot`，不因下载脚本中出现就视为本次新增要求。
+不执行 AX6600 脚本中的全局主题替换，也不照搬其主机名或无线设置；LAN 初始地址另按用户要求设为192.168.70.1。按用户要求，排除 AX6600 专用 `luci-app-athena-led`（雅典娜 LED 屏幕插件）和 `files/etc/uci-defaults/99-athena-led-config-migration` 迁移脚本，不为 BE3600 Pro Wired 添加这些设备专属内容。AX6600 下载了但没有显式选择的 `momo、passwall2、kucat、diskman、mosdns、openlist2、qmodem、quickfile、vnt、pushbot`，不因下载脚本中出现就视为本次新增要求。
+
+用户另外明确不需要 QModem。当前 `Config/sources.json` 没有 QModem 来源，插件配置没有 QModem 选择，已生成的真实 `.config` 也没有任何 QModem 包；因此保持其未引入、未选择状态，不为此重启正在进行的固件编译。
 
 AX6600 本地 `package/dae` 使用 `olicesx/dae:kdae`、自定义 outbound 和动态 Go 依赖，另有本地 `luci-app-dae`、`v2ray-geodata` 覆盖包。本次原有包优先，保留官方 feeds 中的 daed、HomeProxy 及相关已有后端和数据包实现；不复制这些覆盖包，也不删除 feeds 中同名包。保留 DAED 所需的 eBPF/BTF 等实际内核能力，不能整段移植旧 `qualcommax` 内核配置。独立 DAE 不作显式构建选择；必要依赖仍以官方包定义为准。
 

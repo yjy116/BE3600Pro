@@ -4,7 +4,7 @@
 
 用途：**作为 AC 管理集客 AP**。PoE 管理（含中文）以及 Gecoos AC 前端和后端是核心功能，配置和最终固件均检查其存在。
 
-保留原默认软件、PoE 管理及中文包、PPE/交换机驱动、分区与镜像规则；对比 AX6600 后增补所需应用。保留 DAED，不加入独立 DAE、Aurora 或 Argon，继续使用上游 Bootstrap 默认主题。排除雅典娜专用插件及 USB 打印、qBittorrent、Samba、Mini Diskmanager、Partexp。
+保留原默认软件、PoE 管理及中文包、PPE/交换机驱动、分区与镜像规则；对比 AX6600 后增补所需应用。保留 DAED，不加入独立 DAE、Aurora 或 Argon，继续使用上游 Bootstrap 默认主题。排除 QModem、雅典娜专用插件及 USB 打印、qBittorrent、Samba、Mini Diskmanager、Partexp。
 
 ## 插件策略
 
