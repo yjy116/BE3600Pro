@@ -2,6 +2,8 @@
 
 基于 [VIKINGYFY/immortalwrt 的 owrt 分支](https://github.com/VIKINGYFY/immortalwrt/tree/owrt)，仅编译 **8 网口版 p8**（`qualcommbe/ipq53xx`）。
 
+用途：**作为 AC 管理集客 AP**。PoE 管理（含中文）以及 Gecoos AC 前端和后端是核心功能，配置和最终固件均检查其存在。
+
 保留原默认软件、PoE 管理及中文包、PPE/交换机驱动、分区与镜像规则；对比 AX6600 后增补所需应用。保留 DAED，不加入独立 DAE、Aurora 或 Argon，继续使用上游 Bootstrap 默认主题。排除雅典娜专用插件及 USB 打印、qBittorrent、Samba、Mini Diskmanager、Partexp。
 
 ## 插件策略
@@ -31,7 +33,7 @@ bash scripts/build.sh
 
 完整构建成功且检查通过后创建 Release，保留原文件名的 `sysupgrade.bin`、`factory.ubi`、manifest、`profiles.json`、`sha256sums` 和 buildinfo。实际配置、源码 SHA、feeds SHA、准备/下载/编译日志保存在 Actions artifact。
 
-检查会拒绝：错误机型、原默认包被丢弃、所需应用被 defconfig 丢弃、镜像/PoE 包缺失、校验和不符。失败保留诊断资料，不发布假成功固件。
+检查会拒绝：错误机型、原默认包被丢弃、所需应用被 defconfig 丢弃、镜像或 PoE/Gecoos AC 核心包缺失、校验和不符。失败保留诊断资料，不发布假成功固件。
 
 本仓库不改上游管理 IP、主机名或登录密码。应用内置不代表已配置服务；代理订阅、VPN 账户等由使用者设置。
 

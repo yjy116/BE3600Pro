@@ -16,7 +16,10 @@ BOOLEAN_PATTERN = re.compile(r"(CONFIG_[A-Za-z0-9_+.-]+)=([ymn])")
 DISABLED_PATTERN = re.compile(r"# (CONFIG_[A-Za-z0-9_+.-]+) is not set")
 CHECKSUM_PATTERN = re.compile(r"([a-fA-F0-9]{64}) [ *](.+)")
 MANIFEST_PATTERN = re.compile(r"([A-Za-z0-9][A-Za-z0-9+_.-]*)\s+-\s+\S.*")
-POE_PACKAGES = frozenset({"luci-app-tmi-poe", "luci-i18n-tmi-poe-zh-cn"})
+CRITICAL_PACKAGES = frozenset({
+    "luci-app-tmi-poe", "luci-i18n-tmi-poe-zh-cn", "kmod-dsa-rtl837x",
+    "luci-app-gecoosac", "gecoosac",
+})
 HASH_CHUNK_BYTES = 1024 * 1024
 FAILURE_EXIT_CODE = 1
 
@@ -74,10 +77,12 @@ def verify_config(arguments):
     requested = selected_packages(arguments.requested)
     require_packages(baseline, actual, "Baseline preservation")
     require_packages(requested, actual, "Requested configuration")
+    require_packages(CRITICAL_PACKAGES, actual, "Critical configuration")
     if arguments.features is not None:
         verify_features(arguments.features, arguments.actual)
     print(f"Configuration verified: {len(baseline)} baseline packages retained; "
-          f"{len(requested)} requested packages selected; device {PROFILE}.")
+          f"{len(requested)} requested packages selected; "
+          f"{len(CRITICAL_PACKAGES)} critical packages selected; device {PROFILE}.")
 
 
 def require_artifacts(directory, suffix):
@@ -163,7 +168,7 @@ def verify_firmware(arguments):
     missing = required_files - checked
     if missing:
         raise ValueError(f"Missing sha256sums records for: {', '.join(sorted(missing))}")
-    expected = selected_packages(arguments.requested) | POE_PACKAGES
+    expected = selected_packages(arguments.requested) | CRITICAL_PACKAGES
     for path in manifests:
         require_packages(expected, manifest_packages(path), f"Manifest {path.name}")
     print(f"Firmware verified for {PROFILE}: both image formats present, "

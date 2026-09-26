@@ -16,10 +16,13 @@ PREFIX = f"openwrt-qualcommbe-ipq53xx-{PROFILE}"
 TIMEOUT_SECONDS = 10
 BASELINE = "CONFIG_PACKAGE_luci=y\nCONFIG_PACKAGE_tc-tiny=y\n"
 REQUESTED = "CONFIG_PACKAGE_luci-app-passwall=y\nCONFIG_PACKAGE_ddns-scripts=y\n"
-PACKAGES = (
-    "luci-app-passwall", "ddns-scripts", "luci-app-tmi-poe",
-    "luci-i18n-tmi-poe-zh-cn",
+CRITICAL_PACKAGES = (
+    "luci-app-tmi-poe", "luci-i18n-tmi-poe-zh-cn", "kmod-dsa-rtl837x",
+    "luci-app-gecoosac", "gecoosac",
 )
+CRITICAL_CONFIG = "".join(f"CONFIG_PACKAGE_{name}=y\n" for name in CRITICAL_PACKAGES)
+VALID_CONFIG = DEVICE + BASELINE + REQUESTED + CRITICAL_CONFIG
+PACKAGES = ("luci-app-passwall", "ddns-scripts", *CRITICAL_PACKAGES)
 
 
 class BuildVerificationTests(unittest.TestCase):
@@ -56,7 +59,7 @@ class BuildVerificationTests(unittest.TestCase):
         self.assertNotIn("Traceback", result.stderr)
 
     def test_config_preserves_baseline_and_adds_requested(self):
-        result = self.config(DEVICE + BASELINE + REQUESTED)
+        result = self.config(VALID_CONFIG)
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_config_ignores_modules_and_passwall_feature_switches(self):
@@ -66,29 +69,28 @@ class BuildVerificationTests(unittest.TestCase):
             "CONFIG_PACKAGE_optional-module=m\n"
         )
         self.write("plugins.config", REQUESTED + options)
-        result = self.config(DEVICE + BASELINE + REQUESTED, baseline=BASELINE + options)
+        result = self.config(VALID_CONFIG, baseline=BASELINE + options)
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_config_rejects_lost_default_even_when_replaced(self):
-        result = self.config(DEVICE + REQUESTED + "CONFIG_PACKAGE_luci=y\n"
-                             "CONFIG_PACKAGE_tc-full=y\n")
+        result = self.config(VALID_CONFIG.replace("tc-tiny=y", "tc-full=y"))
         self.assert_rejected(result, "tc-tiny")
 
     def test_config_rejects_requested_package_changed_to_module(self):
-        result = self.config(DEVICE + BASELINE + REQUESTED.replace("passwall=y", "passwall=m"))
+        result = self.config(VALID_CONFIG.replace("passwall=y", "passwall=m"))
         self.assert_rejected(result, "luci-app-passwall")
 
     def test_config_requires_exact_target_profile(self):
-        result = self.config(BASELINE + REQUESTED + DEVICE.replace("wired-p8", "wired-p7"))
+        result = self.config(VALID_CONFIG.replace("wired-p8", "wired-p7"))
         self.assert_rejected(result, PROFILE)
 
     def test_config_rejects_additional_device(self):
-        result = self.config(DEVICE + BASELINE + REQUESTED +
+        result = self.config(VALID_CONFIG +
                              "CONFIG_TARGET_qualcommbe_ipq53xx_DEVICE_other-router=y\n")
         self.assert_rejected(result, "other-router")
 
     def test_config_reports_missing_input_without_traceback(self):
-        actual = self.write("actual.config", DEVICE + BASELINE + REQUESTED)
+        actual = self.write("actual.config", VALID_CONFIG)
         result = self.invoke(["config", "--baseline", self.root / "absent",
                               "--actual", actual, "--requested", self.requested])
         self.assert_rejected(result, "absent")
@@ -97,11 +99,11 @@ class BuildVerificationTests(unittest.TestCase):
         features = ("CONFIG_KERNEL_DEBUG_INFO_BTF=y\n"
                     "# CONFIG_KERNEL_DEBUG_INFO_REDUCED is not set\n"
                     "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray=y\n")
-        result = self.config(DEVICE + BASELINE + REQUESTED + features, features=features)
+        result = self.config(VALID_CONFIG + features, features=features)
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_config_rejects_missing_required_btf(self):
-        result = self.config(DEVICE + BASELINE + REQUESTED,
+        result = self.config(VALID_CONFIG,
                              features="CONFIG_KERNEL_DEBUG_INFO_BTF=y\n")
         self.assert_rejected(result, "CONFIG_KERNEL_DEBUG_INFO_BTF")
 
@@ -114,8 +116,16 @@ class BuildVerificationTests(unittest.TestCase):
         )
         for actual, expected in options:
             with self.subTest(expected=expected):
-                result = self.config(DEVICE + BASELINE + REQUESTED + actual, features=expected)
+                result = self.config(VALID_CONFIG + actual, features=expected)
                 self.assert_rejected(result, "Feature")
+
+    def test_config_requires_critical_packages_even_when_baseline_omits_them(self):
+        for missing in CRITICAL_PACKAGES:
+            with self.subTest(missing=missing):
+                actual = VALID_CONFIG.replace(f"CONFIG_PACKAGE_{missing}=y\n", "")
+                result = self.config(actual)
+                self.assert_rejected(result, missing)
+                self.assertIn("Critical configuration", result.stderr)
 
     def create_firmware(self):
         directory = self.root / "firmware"
@@ -168,7 +178,7 @@ class BuildVerificationTests(unittest.TestCase):
         self.write_checksums(directory)
         self.assert_rejected(self.firmware(directory), "manifest")
 
-    def test_firmware_requires_requested_and_poe_packages(self):
+    def test_firmware_requires_requested_and_critical_packages(self):
         for missing in PACKAGES:
             with self.subTest(missing=missing):
                 directory = self.create_firmware()

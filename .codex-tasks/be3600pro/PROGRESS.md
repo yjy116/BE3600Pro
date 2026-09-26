@@ -1,11 +1,11 @@
 # Progress
 
 ## Recovery
-- 当前：阶段 3，按用户新增排除项更新配置，首次构建已主动取消。
+- 当前：阶段 3，最终21个应用配置已推送并启动新构建。
 - 用户已确认：插件与 AX6600 相同，公开仓库。
 - 本地目录原为空，gh 已认证 yjy116；无可用 WSL Linux，实际编译放在 GitHub Actions Ubuntu runner。
 - 只读参考克隆：.reference/ax6600（已 gitignore）。
-- 下一步：推送最终21个应用配置，启动新构建并检查真实配置与编译结果。
+- 下一步：跟踪run 36245100934，检查真实配置与编译结果。
 
 ## 已核实与用户调整
 - owrt cde43ee0d73bef295a96d3a29fe499d69232b448：qualcommbe/ipq53xx，p8。
@@ -30,3 +30,7 @@
 - 用户确认同时排除qBittorrent、Samba、Mini Diskmanager、Partexp；同步删除新增后端和对应外源。
 - 最终新增21个LuCI应用：15个使用原feeds，6个补充外源。
 - run 36244852058 于依赖准备前被主动取消（cancelled），不是固件编译错误；其validate已通过。push run 36244851511也已成功。
+- 最终精简提交：6c00812be39498f41d56a4850909bf8109eb486a，本地/远程main一致。
+- 新完整构建：https://github.com/yjy116/BE3600Pro/actions/runs/36245100934
+- 用户进一步强调核心用途为AC带集客AP：PoE管理与Gecoos AC不可缺失；现有选择已包含，进一步强化前后端/设备驱动验收，不改变本轮插件选择。
+- 核心检查已加入配置与manifest两处，缺少PoE前端/中文、RTL837x或Gecoos前后端均失败；24项测试通过（3.094秒，60秒硬超时）。
