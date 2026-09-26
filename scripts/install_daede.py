@@ -10,15 +10,17 @@ import subprocess
 import sys
 
 from add_packages import checkout
+from daede_service_compat import adapt_services
 
 
 REPOSITORY = "kenzok8/openwrt-daede"
 GROUP_NAME = "kenzok8_openwrt-daede"
-FEED_LINK = Path("package/feeds/packages/daed")
-FEED_SOURCE = Path("feeds/packages/net/daed")
+FEED_LINK_DIRECTORY = Path("package/feeds/packages")
+FEED_SOURCE_DIRECTORY = Path("feeds/packages/net")
 RECIPE_ANCHOR = "PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)"
 HOST_DEPENDENCY = "PKG_BUILD_DEPENDS:=luci-base/host"
-RECIPES = ("daed", "luci-app-daede")
+DAEMONS = ("dae", "daed")
+RECIPES = (*DAEMONS, "luci-app-daede")
 CONFIG_RESOURCE = Path("dae/files/dae.config")
 REQUIRED_FILES = tuple(Path(name) / "Makefile" for name in RECIPES) + (CONFIG_RESOURCE,)
 FAILURE_EXIT_CODE = 1
@@ -39,13 +41,13 @@ def read_source_lock(path):
     return validate_source_entry(entry)
 
 
-def validate_feed_link(source):
-    link = source / FEED_LINK
-    expected = source / FEED_SOURCE
+def validate_feed_link(source, name):
+    link = source / FEED_LINK_DIRECTORY / name
+    expected = source / FEED_SOURCE_DIRECTORY / name
     if not link.is_symlink():
-        raise ValueError(f"Expected a DAED feed symbolic link: {link}")
+        raise ValueError(f"Expected a {name.upper()} feed symbolic link: {link}")
     if not expected.is_dir() or link.resolve(strict=True) != expected.resolve(strict=True):
-        raise ValueError(f"Unexpected DAED link target: {link}; expected {expected}")
+        raise ValueError(f"Unexpected {name.upper()} link target: {link}; expected {expected}")
     return link
 
 
@@ -68,42 +70,45 @@ def install_payload(downloaded, destination):
     for relative in REQUIRED_FILES:
         if not (downloaded / relative).is_file():
             raise ValueError(f"Missing source file: {downloaded / relative}")
-    luci_recipe = adapted_luci_recipe(downloaded / "luci-app-daede/Makefile")
     destination.mkdir(parents=True)
     for name in RECIPES:
         shutil.copytree(downloaded / name, destination / name)
-    resource = destination / CONFIG_RESOURCE
-    resource.parent.mkdir(parents=True)
-    shutil.copy2(downloaded / CONFIG_RESOURCE, resource)
-    (destination / "luci-app-daede/Makefile").write_bytes(luci_recipe)
-    return [{"file": "luci-app-daede/Makefile", "anchor": RECIPE_ANCHOR,
-             "added": HOST_DEPENDENCY, "reason": "Declare po2lmo host build dependency"}]
+    service_adaptations = adapt_services(destination)
+    luci_recipe = destination / "luci-app-daede/Makefile"
+    luci_recipe.write_bytes(adapted_luci_recipe(luci_recipe))
+    build_adaptation = {"file": "luci-app-daede/Makefile", "anchor": RECIPE_ANCHOR,
+                        "added": HOST_DEPENDENCY, "reason": "Declare po2lmo host build dependency"}
+    return [*service_adaptations, build_adaptation]
 
 
 def install_daede(source, downloaded, entry):
     locked = validate_source_entry(entry)
     root = source.resolve(strict=True)
-    link = validate_feed_link(root)
+    links = tuple(validate_feed_link(root, name) for name in DAEMONS)
     destination = root / "package/custom" / GROUP_NAME
     if not destination.resolve().is_relative_to(root):
         raise ValueError(f"DAEDE destination escapes the OpenWrt source tree: {destination}")
     adaptations = install_payload(downloaded, destination)
-    # Remove only the verified feed link after every replacement file is ready.
-    link.unlink()
+    # Both links are validated before staging; remove them only after all recipes are ready.
+    for link in links:
+        link.unlink()
     return {
         **locked,
         "packages": list(RECIPES),
-        "replacement": {"removed_symlink": FEED_LINK.as_posix(),
-                        "preserved_feed": FEED_SOURCE.as_posix(),
-                        "installed_directory": destination.relative_to(root).as_posix()},
-        "resources": [CONFIG_RESOURCE.as_posix()],
+        "replacements": [
+            {"package": name, "removed_symlink": (FEED_LINK_DIRECTORY / name).as_posix(),
+             "preserved_feed": (FEED_SOURCE_DIRECTORY / name).as_posix(),
+             "installed_directory": (destination / name).relative_to(root).as_posix()}
+            for name in DAEMONS
+        ],
         "adaptations": adaptations,
     }
 
 
 def install_from_lock(arguments):
     locked = read_source_lock(arguments.lock)
-    validate_feed_link(arguments.source)
+    for name in DAEMONS:
+        validate_feed_link(arguments.source, name)
     downloaded = arguments.source / ".extra" / GROUP_NAME
     checkout(locked, downloaded)
     actual = subprocess.run(["git", "-C", str(downloaded), "rev-parse", "HEAD"],

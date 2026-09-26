@@ -1,4 +1,4 @@
-# DAED 版本核查与更新
+# DAE / DAED 版本、核心来源与后端切换
 
 核查日期：2026-09-27。软件包版本、LuCI 包版本和网页的前端版本是不同字段。
 
@@ -35,8 +35,8 @@ AX6600 的 [`Scripts/Packages.sh`](https://github.com/yjy116/Immortalwrt-CI-JDC-
 固定来源如下，数字保持维护者定义，不将旧代码伪装为新版本：
 
 - 配方提交：`0b0e5d671e5748a060fbd79abc2f73733b09f902`。
-- `daed`：`2026.09.24-r2`，使用维护者的日期版本号。
-- `luci-app-daede`：`1.15-r6`，替代旧 `luci-app-daed` 管理入口。
+- `dae`、`daed`：均为 `2026.09.24-r2`，使用维护者的日期版本号。
+- `luci-app-daede`：`1.15-r6`，统一替代旧 `luci-app-dae`、`luci-app-daed` 管理入口。
 - 前端源码 `apps/web/package.json`：`1.28.0`，已从实际冻结源码包读取确认。
 - 冻结源码：`daed-src-2026.09.24-527bb166b1ae.tar.gz`。
 - SHA256：`527bb166b1aea6a54330ebbc8be5b0418baed74636b838aeaa78c17b70f2f996`，已实际下载校验。
@@ -46,12 +46,59 @@ AX6600 的 [`Scripts/Packages.sh`](https://github.com/yjy116/Immortalwrt-CI-JDC-
 wing `b089b568649f03f909477adb6c7db25535a58782` 以及 core/outbound/quic-go 的固定提交。
 因此这次实际升级了源码、后台维护补丁和网页，不是仅修改版本字符串。
 
+## DAE 核心是否同步更新
+
+DAED 集成了 DAE 核心、API 和网页。冻结包中的 `wing/go.mod:133` 使用
+`replace github.com/daeuniverse/dae => ./dae-core`，`wing/dae/run.go` 直接调用核心的控制平面 API。
+构建配方在 `dae-core` 生成 eBPF 并将 `dae-wing` 安装为 `/usr/bin/daed`，不调用独立 `/usr/bin/dae`。
+`go.mod` 里的 `require ... v0.2.0` 被本地 replace 覆盖，不能据此判断实际核心过旧。
+
+上一版 1.27.0 的子模块链固定为 `dae-wing@6bb6a310ef3d98bea691fd5955cc703306835546`
+→ `dae@7e67e31e241a6d2cc5f2b5ff228b4fb5faf6d24a`（2025-11-03）。
+新维护源的两个组装工作流共同使用 `ci/pins.env`：
+
+| 组成 | 固定来源 |
+| --- | --- |
+| DAE 性能分支基础 | `kenzok8/dae@be2b6047eff8be8da7dfdcd0c007fd6d9f7f5175` |
+| 合入的 DAE 上游 | `daeuniverse/dae@6f2f2aa66084f3d736e4bf86a327e3523b3cdede`（2026-09-24） |
+| outbound | `kenzok8/outbound@ebd5cd55cbda1614987db6149eef22144b459fe0` |
+| quic-go | `62d80bbebb5b0ff3ff143786ea65077bdfd67853` |
+
+独立 DAE 冻结包为 `dae-src-2026.09.24-17135da7c881.tar.gz`，实际下载 SHA256 为
+`17135da7c881800738cc63566160d4ee6d59a8a70ae5043b8005c5d189b05752`。
+与上述 DAED 冻结包逐文件比较：520 个核心 Go/C/头文件/汇编文件全部一致；
+642 个共同文件中仅 `go.mod`、`go.sum` 有差别，其中包含两种目录布局所需的本地依赖路径差异。
+独立包多出的 `default.pgo` 与 DAED 的 `wing/default.pgo` 内容相同，outbound 与 quic-go 内容也一致。
+实际逐文件比较结果保存在[审计证据](evidence/dae-core-comparison-20260924.json)。
+
+这是共享冻结核心来源，不表示两种程序最终字节相同：独立 DAE 另应用维护源的
+`dae/patches/010-dns-response-ttl.patch`，DAED 还有自己的 wing 补丁。两套补丁保持各自维护者的组合。
+构建证据额外保存 `daede-core-pins.env`、`dae-Makefile`、`daed-Makefile` 与替换记录。
+
+## 两个后端如何避免同时接管流量
+
+两种后端都内置；LuCI 的编译 `choice` 只决定自动依赖，保持选择 DAED，独立 DAE 显式加入插件配置。
+运行时选择由 `/etc/config/daede` 的 `active_backend` 控制，默认 `daed`，全新配置的两个服务均未启用。
+
+固定维护源的切换逻辑只停止旧进程，没有清除旧服务的 UCI enabled 与开机启动项；两个 init
+也没有核对 `active_backend`，因此需要本仓库的最小互斥适配：
+
+- 切换前停止并取消旧后端的开机启用，确认停止成功后才切换；新后端由用户单独启用。
+- init 在创建网络和启动进程之前核对当前选择，另一后端仍在运行时明确拒绝启动。
+- 两个进程通过同一 `flock` 锁启动并持锁到退出；DAED 包括 guard 清理结束。拿锁后再次核对当前选择，防止并发启动穿过进程检查。
+- 停止闲置 DAE 不得清除运行中 DAED 的共享网络资源。
+- 适配失败直接中止构建，变更记录在 `daede-source.json`；测试验证启动选择与切换行为，不等同于实机验证。
+
+DAE 的文本配置与 DAED 的数据库分别保留，不自动将数据库转换为 DAE 配置；切换后需核对所选后端的配置。
+互斥适配随本仓库构建提供；单独安装维护源原始 DAE/DAED/LuCI 软件包会覆盖相应适配，更新时需保持本仓库构建的配套组合。
+
 ## 集成与保留边界
 
-- 完整复制该来源的 `daed`、`luci-app-daede`，包含后台补丁、guard、cleanup、配置保留文件；只替换官方 DAED recipe 的安装链接，原 feed 源码保留。
+- 完整复制该来源的 `dae`、`daed`、`luci-app-daede`，包含后台补丁、guard、cleanup、配置保留文件；先验证两个官方 recipe 的链接，复制与适配成功后才替换，原 feed 源码保留。
 - LuCI 构建显式补充 `luci-base/host` 依赖，确保其 `po2lmo` 翻译工具先构建；此适配记录在构建证据。
-- 选择 LuCI 的 DAED 后端，禁用独立 `dae`、`luci-app-dae` 和旧 `luci-app-daed`，配置与最终 manifest 都检查排除项。
-- 新 LuCI 打包时需要相邻 `dae/files/dae.config` 作为默认资源；只复制该资源，不复制 `dae/Makefile`，因此不会为此引入独立 DAE。
+- 配置与最终 manifest 都要求 `dae`、`daed`、`luci-app-daede`，拒绝旧 `luci-app-dae`、`luci-app-daed` 两个重复管理入口。
+- 两种后端均使用内核 BTF，保留实际 eBPF 能力。
+- 统一 LuCI 安装共享锁启动程序并依赖 `flock`，插件清单也显式要求该锁工具。
 - 管理入口改为“服务 → daede”。原 `/etc/config/daed`、`/etc/daed/wing.db` 保留，维护源还声明保留 WAL 数据文件；已有数据库迁移仍需实机确认。
 - 保留现有 Geo 周更。新服务直接使用 `/usr/share/v2ray`，新 LuCI 的额外 Geo 自动更新默认不启用。
 

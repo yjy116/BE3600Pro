@@ -1,0 +1,70 @@
+{
+  "audited_on": "2026-09-27",
+  "recipe_repository": "kenzok8/openwrt-daede",
+  "recipe_commit": "0b0e5d671e5748a060fbd79abc2f73733b09f902",
+  "scope": "Downloaded frozen sources before package-level patches; not a runtime validation",
+  "core": {
+    "archives": {
+      "dae": {
+        "size": 9869148,
+        "sha256": "17135da7c881800738cc63566160d4ee6d59a8a70ae5043b8005c5d189b05752",
+        "file": "dae-src-2026.09.24-17135da7c881.tar.gz"
+      },
+      "daed": {
+        "size": 41270048,
+        "sha256": "527bb166b1aea6a54330ebbc8be5b0418baed74636b838aeaa78c17b70f2f996",
+        "file": "daed-src-2026.09.24-527bb166b1ae.tar.gz"
+      }
+    },
+    "prefixes": {
+      "dae": "dae-2026.09.24/core/",
+      "daed": "daed-2026.09.24/wing/dae-core/"
+    },
+    "entry_counts": {
+      "dae": 643,
+      "daed": 642
+    },
+    "common_count": 642,
+    "only_dae": [
+      "default.pgo"
+    ],
+    "only_daed": [],
+    "different_content": [
+      "go.mod",
+      "go.sum"
+    ],
+    "different_mode": [],
+    "comparison": "All non-directory core entries compared by type and SHA256 of raw contents or symlink target; tar timestamps, uid/gid, ownership names and ordering excluded. Modes compared separately. No file paths excluded."
+  },
+  "dependencies": {
+    "outbound": {
+      "left_count": 469,
+      "right_count": 469,
+      "identical_count": 469,
+      "only_left": [],
+      "only_right": [],
+      "changed": []
+    },
+    "quic-go": {
+      "left_count": 519,
+      "right_count": 519,
+      "identical_count": 519,
+      "only_left": [],
+      "only_right": [],
+      "changed": []
+    },
+    "pgo": {
+      "same_as_wing_default_pgo": true,
+      "sha256": "f3e4278eca969906a9b6f6476bfec44f820f029077cdea988c1fb8690c085898"
+    },
+    "source": {
+      "common_file_count": 520,
+      "changed": []
+    }
+  },
+  "package_patch_difference": {
+    "dae": "010-dns-response-ttl.patch modifies 13 core files (9 production, 4 tests)",
+    "daed": "Nine regular patches modify the wing wrapper, not embedded dae-core",
+    "arm32": "Architecture-specific patches are not selected for the AArch64 p8 target"
+  }
+}

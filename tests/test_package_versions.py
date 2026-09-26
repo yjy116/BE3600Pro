@@ -14,6 +14,7 @@ PROFILE = "xiaomi_be3600-pro-wired-p8"
 PREFIX = f"openwrt-qualcommbe-ipq53xx-{PROFILE}"
 TIMEOUT_SECONDS = 10
 EXPECTED_VERSIONS = {
+    "dae": "2026.09.24-r2",
     "daed": "2026.09.24-r2",
     "luci-app-daede": "1.15-r6",
     "luci-theme-aurora": "1.4.0-r20260920",
@@ -62,11 +63,11 @@ class PackageVersionTests(unittest.TestCase):
         self.assertIn(detail, result.stderr)
         self.assertNotIn("Traceback", result.stderr)
 
-    def test_accepts_exact_daed_and_aurora_versions(self):
+    def test_accepts_exact_dae_daed_and_aurora_versions(self):
         self.manifest(EXPECTED_VERSIONS)
         result = self.invoke()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("4 package versions verified", result.stdout)
+        self.assertIn("5 package versions verified", result.stdout)
 
     def test_rejects_old_daed_or_aurora_version(self):
         for package in EXPECTED_VERSIONS:
@@ -89,11 +90,11 @@ class PackageVersionTests(unittest.TestCase):
         self.manifest(EXPECTED_VERSIONS | {"daed": ""})
         self.assert_rejected(self.invoke(), "Malformed manifest")
 
-    def test_rejects_standalone_dae_and_legacy_daed_ui(self):
-        for package in ("dae", "luci-app-dae", "luci-app-daed"):
+    def test_rejects_legacy_dae_and_daed_ui(self):
+        for package in ("luci-app-dae", "luci-app-daed"):
             with self.subTest(package=package):
                 self.manifest(EXPECTED_VERSIONS | {package: "1.0-r1"})
-                self.assert_rejected(self.invoke(), "Excluded DAE or legacy DAED packages: " + package)
+                self.assert_rejected(self.invoke(), "Excluded legacy DAE/DAED interfaces: " + package)
 
     def test_rejects_duplicate_manifest_package_versions(self):
         self.manifest(EXPECTED_VERSIONS, extra="daed - 1.27.0-r1\n")

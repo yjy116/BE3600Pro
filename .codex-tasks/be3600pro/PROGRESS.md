@@ -1,11 +1,11 @@
 # Progress
 
 ## Recovery
-- 当前：kenzok8维护源迁移已推送，Linux 48项测试全部通过；新完整构建run36255985960已启动。
+- 当前：用户要求扩展为DAE/DAED双后端，旧单后端构建run36255985960已取消；正在补齐维护源的互斥逻辑并重新验证。
 - 用户已确认：插件与 AX6600 相同，公开仓库。
 - 本地目录原为空，gh 已认证 yjy116；无可用 WSL Linux，实际编译放在 GitHub Actions Ubuntu runner。
 - 只读参考克隆：.reference/ax6600（已 gitignore）。
-- 下一步：跟踪run36255985960的真实配置与完整编译，核对DAED/Aurora实际版本和独立DAE排除项。
+- 下一步：完成双后端互斥测试、提交并启动新完整构建；核对两后端、统一LuCI与Aurora版本，保留PoE/Gecoos和70.1地址。
 
 ## 已核实与用户调整
 - owrt cde43ee0d73bef295a96d3a29fe499d69232b448：qualcommbe/ipq53xx，p8。
@@ -94,3 +94,14 @@
 - push验证run36255945821成功：Linux实际48项全部通过（2.374秒，无跳过），包含两项真实symlink操作。
 - 新完整构建：https://github.com/yjy116/BE3600Pro/actions/runs/36255985960，config_only=false，编译目标提交34fb4b6。
 - 新run的真实Prepare/defconfig检查通过，已进入Compile and verify firmware；原默认与核心包保留、只选DAED及新recipe集成通过配置验收，最终编译与manifest仍待结果。
+
+## DAE / DAED 同步迁移与互斥
+- 用户最新要求覆盖此前独立 DAE 排除项：两个后端都迁移，luci-app-daede 统一切换，禁止同时接管流量。
+- 实际冻结包确认 DAED 的 wing/go.mod 将 dae 替换为内嵌 dae-core，调用核心 Go API；原方案没有删除 DAED 的核心，但此前未打包独立 dae。
+- 旧 1.27.0 内嵌核心为 7e67e31e（2025-11-03）；维护源冻结核心由 be2b6047 性能分支合并上游 6f2f2aa6（2026-09-24），前端 1.28.0 与核心版本不是同一个字段。
+- 当前上游切换只 stop 旧服务，没有清除 enabled/rc.d；init 也未检查 active_backend，重启可能双启。需修复持久化互斥并做针对性验证。
+- 已请求取消单后端构建 run36255985960，准备双后端新构建。
+- run36255985960已确认cancelled。两后台冻结包实际SHA256均通过，520个核心源码文件相同；独立DAE另带DNS response_ttl补丁，不能声称最终核心完全一致。证据写入docs/evidence。
+- 配置与manifest测试先验证旧DAE排除规则会失败，再改为双后端必需、旧管理入口排除；26项配置/产物测试及10项版本测试通过。
+- 两后台完整recipe已同步替换，原feed源码保留；新增统一启动锁、选择复核、切换持久化禁用、严格RPC错误、guard尾阶段重复停止保护和共享网络清理锁。DAE正常SIGTERM已由真实核心源码确认自行detach/netns.Close，异常强杀清理不作保证。
+- 本地最终验证：unittest报告70项、无失败、10条Windows跳过记录（Linux进程锁/信号与真实symlink权限）；耗时10.386秒，60秒硬超时。actionlint、Bash/Python语法、diff和Python文件/函数行限检查通过；待Linux完整执行。

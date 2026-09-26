@@ -1,0 +1,3 @@
+Unmodified LF-normalized service/UI fixtures from kenzok8/openwrt-daede
+Commit: 0b0e5d671e5748a060fbd79abc2f73733b09f902
+Paths beneath this directory match the upstream repository paths.

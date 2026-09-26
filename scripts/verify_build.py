@@ -21,7 +21,7 @@ CRITICAL_PACKAGES = frozenset({
     "luci-app-tmi-poe", "luci-i18n-tmi-poe-zh-cn", "kmod-dsa-rtl837x",
     "luci-app-gecoosac", "gecoosac",
 })
-FORBIDDEN_PACKAGES = frozenset({"dae", "luci-app-dae", "luci-app-daed"})
+FORBIDDEN_PACKAGES = frozenset({"luci-app-dae", "luci-app-daed"})
 HASH_CHUNK_BYTES = 1024 * 1024
 FAILURE_EXIT_CODE = 1
 
@@ -44,10 +44,10 @@ def require_packages(expected, actual, context):
         raise ValueError(f"{context}: missing packages: {', '.join(sorted(missing))}")
 
 
-def reject_legacy_dae(actual):
+def reject_legacy_interfaces(actual):
     forbidden = FORBIDDEN_PACKAGES & actual
     if forbidden:
-        raise ValueError("Excluded DAE or legacy DAED packages: " + ", ".join(sorted(forbidden)))
+        raise ValueError("Excluded legacy DAE/DAED interfaces: " + ", ".join(sorted(forbidden)))
 
 
 def boolean_options(path):
@@ -81,7 +81,7 @@ def verify_config(arguments):
         raise ValueError(f"Expected only device {DEVICE_SYMBOL}; selected: "
                          f"{', '.join(sorted(devices)) or '(none)'}")
     actual = selected_packages(arguments.actual)
-    reject_legacy_dae(actual)
+    reject_legacy_interfaces(actual)
     baseline = selected_packages(arguments.baseline)
     requested = selected_packages(arguments.requested)
     require_packages(baseline, actual, "Baseline preservation")
@@ -218,7 +218,7 @@ def verify_firmware(arguments):
     expected = selected_packages(arguments.requested) | CRITICAL_PACKAGES | frozenset(versions)
     for path in manifests:
         installed = manifest_versions(path)
-        reject_legacy_dae(frozenset(installed))
+        reject_legacy_interfaces(frozenset(installed))
         require_packages(expected, frozenset(installed), f"Manifest {path.name}")
         verify_versions(versions, installed, path)
     print(f"Firmware verified for {PROFILE}: both image formats present, "

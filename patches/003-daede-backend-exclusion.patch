@@ -1,0 +1,383 @@
+--- a/dae/files/dae.init
++++ b/dae/files/dae.init
+@@ -10,12 +10,39 @@
+ PROG="/usr/bin/dae"
+ LOG_DIR="/var/log/dae"
+ 
++backend_start_allowed() {
++	local active status
++	active="$(uci -q get daede.config.active_backend)" || {
++		echo "$CONF: cannot read active backend" >&2
++		return 1
++	}
++	case "$active" in
++		dae|daed) ;;
++		*) echo "$CONF: invalid active backend: $active" >&2; return 1 ;;
++	esac
++	[ "$active" = "$CONF" ] || {
++		echo "$CONF: active backend is $active; refusing to start" >&2
++		return 1
++	}
++	if pidof "$@" >/dev/null 2>&1; then
++		echo "$CONF: other backend ($*) has not exited; refusing to start" >&2
++		return 1
++	else
++		status=$?
++		[ "$status" -eq 1 ] || {
++			echo "$CONF: cannot determine other backend process state" >&2
++			return 1
++		}
++	fi
++}
++
+ start_service() {
+ 	config_load "$CONF"
+ 
+ 	local enabled
+ 	config_get_bool enabled "config" "enabled" "0"
+ 	[ "$enabled" -eq "1" ] || return 1
++	backend_start_allowed daed daed-guard || return 1
+ 
+ 	local config_file
+ 	config_get config_file "config" "config_file" "/etc/dae/config.dae"
+@@ -28,7 +55,7 @@
+ 
+ 	procd_open_instance "$CONF"
+ 	procd_set_param env DAE_LOCATION_ASSET="/usr/share/v2ray" TZ="$(uci -q get system.@system[0].zonename)"
+-	procd_set_param command "$PROG" run
++	procd_set_param command /usr/share/luci-app-daede/backend-exec "$CONF" "$PROG" run
+ 	procd_append_param command --config "$config_file"
+ 	procd_append_param command --logfile "$LOG_DIR/dae.log"
+ 	procd_append_param command --logfile-maxbackups "$log_maxbackups"
+@@ -43,7 +70,27 @@
+ 	procd_close_instance
+ }
+ 
+-stop_service() {
++stop_service() (
++	local status
++	if pidof daed daed-guard >/dev/null 2>&1; then
++		echo "$CONF: DAED is running; leaving shared network state untouched" >&2
++		return 0
++	else
++		status=$?
++		[ "$status" -eq 1 ] || {
++			echo "$CONF: cannot determine DAED state; refusing network cleanup" >&2
++			return 1
++		}
++	fi
++	# Serialize shared-network cleanup with both backend process lifetimes.
++	exec 9>/var/lock/daede-backend.lock || return 1
++	flock -n 9
++	local lock_status=$?
++	if [ "$lock_status" -eq 1 ]; then
++		echo "dae: backend still owns runtime lock; leaving shared network intact" >&2
++		return 0
++	fi
++	[ "$lock_status" -eq 0 ] || return "$lock_status"
+ 	rm -rf "$LOG_DIR"
+ 	# kill lingering procs in daens: TERM first, then KILL for stubborn ones
+ 	for pid in $(ip netns pids daens 2>/dev/null); do kill "$pid" 2>/dev/null; done
+@@ -58,7 +105,7 @@
+ 	fi
+ 	# clean orphaned dae0
+ 	ip link del dae0 2>/dev/null || true
+-}
++)
+ 
+ service_triggers() {
+ 	procd_add_reload_trigger "$CONF"
+--- a/daed/files/daed.init
++++ b/daed/files/daed.init
+@@ -16,6 +16,32 @@
+ 	logger -t daed-init "$@"
+ }
+ 
++backend_start_allowed() {
++	local active status
++	active="$(uci -q get daede.config.active_backend)" || {
++		echo "$CONF: cannot read active backend" >&2
++		return 1
++	}
++	case "$active" in
++		dae|daed) ;;
++		*) echo "$CONF: invalid active backend: $active" >&2; return 1 ;;
++	esac
++	[ "$active" = "$CONF" ] || {
++		echo "$CONF: active backend is $active; refusing to start" >&2
++		return 1
++	}
++	if pidof "$@" >/dev/null 2>&1; then
++		echo "$CONF: other backend ($*) has not exited; refusing to start" >&2
++		return 1
++	else
++		status=$?
++		[ "$status" -eq 1 ] || {
++			echo "$CONF: cannot determine other backend process state" >&2
++			return 1
++		}
++	fi
++}
++
+ start_service() {
+ 	log "start: begin"
+ 	config_load "$CONF"
+@@ -27,6 +53,8 @@
+ 		return 1
+ 	fi
+ 
++	backend_start_allowed dae || return 1
++
+ 	local listen_addr log_maxbackups log_maxsize
+ 	config_get listen_addr "config" "listen_addr" "0.0.0.0:2023"
+ 	config_get log_maxbackups "config" "log_maxbackups" "1"
+@@ -36,7 +64,7 @@
+ 
+ 	procd_open_instance "$CONF"
+ 	procd_set_param env DAE_LOCATION_ASSET="/usr/share/v2ray" TZ="$(uci -q get system.@system[0].zonename)"
+-	procd_set_param command "$PROG" run
++	procd_set_param command /usr/share/luci-app-daede/backend-exec "$CONF" "$PROG" run
+ 	procd_append_param command --config "/etc/daed/"
+ 	procd_append_param command --listen "$listen_addr"
+ 	procd_append_param command --logfile "$LOG"
+--- a/luci-app-daede/htdocs/luci-static/resources/view/daede/widgets.js
++++ b/luci-app-daede/htdocs/luci-static/resources/view/daede/widgets.js
+@@ -10,8 +10,8 @@
+ 
+ function execChecked(command, args) {
+ 	return fs.exec(command, args || []).then(function(res) {
+-		if (res && res.code !== 0)
+-			throw new Error((res.stderr || res.stdout || ('exit ' + res.code)).trim());
++		if (!res || res.code !== 0)
++			throw new Error(res ? (res.stderr || res.stdout || ('exit ' + res.code)).trim() : 'No command result');
+ 		return res;
+ 	});
+ }
+@@ -53,10 +53,6 @@
+ 				return execChecked(be.initd, ['enable']);
+ 			return execChecked(be.initd, ['disable']);
+ 		})
+-		.then(function() {
+-			if (turnOn && be.useNetns)
+-				return fs.exec('/sbin/ip', ['netns', 'del', 'daens']).catch(function() {});
+-		})
+ 		.then(function() { return execChecked(be.initd, [action]); });
+ }
+ 
+@@ -68,6 +64,29 @@
+ 			throw new Error(turnOn ? _('Service did not start in time.') : _('Service did not stop in time.'));
+ 		return new Promise(function(resolve) { setTimeout(resolve, 250); })
+ 			.then(function() { return waitForService(be, turnOn, attempts - 1); });
++	});
++}
++
++function disableBackend(be) {
++	return execChecked('/sbin/uci', ['set', be.uci + '.config.enabled=0'])
++		.then(function() { return execChecked('/sbin/uci', ['commit', be.uci]); })
++		.then(function() { return execChecked(be.initd, ['disable']); });
++}
++
++function stopBackends(installed) {
++	const names = ['dae', 'daed'].filter(function(name) { return installed[name]; });
++	return Promise.all(names.map(function(name) {
++		return disableBackend(backend.BACKENDS[name]);
++	})).then(function() {
++		return Promise.all(names.map(function(name) {
++			const be = backend.BACKENDS[name];
++			return execChecked(be.initd, ['stop'])
++				.then(function() { return waitForService(be, false, 40); });
++		}));
++	}).then(function() { return backend.detectRunning(); }).then(function(current) {
++		const live = ['dae', 'daed'].filter(function(name) { return current[name]; });
++		if (live.length)
++			throw new Error(_('Backend processes have not exited: %s').format(live.join(', ')));
+ 	});
+ }
+ 
+@@ -90,20 +109,6 @@
+ 		hint.textContent = msg;
+ 	};
+ 
+-	const stopIfRunning = function(running) {
+-		const stops = [];
+-
+-		['dae', 'daed'].forEach(function(name) {
+-			if (running && running[name])
+-				stops.push(execChecked(backend.BACKENDS[name].initd, ['stop'])
+-					.then(function() { return waitForService(backend.BACKENDS[name], false, 40); }));
+-		});
+-
+-		if (stops.length)
+-			showHint(_('Stopping current backend…'));
+-
+-		return Promise.all(stops);
+-	};
+ 
+ 	['daed', 'dae'].forEach(function(name) {
+ 		const active = ctx.name === name;
+@@ -130,8 +135,7 @@
+ 			Array.prototype.forEach.call(segment.querySelectorAll('button'), function(b) { b.disabled = true; });
+ 			showHint(_('Switching to %s…').format(name));
+ 
+-			backend.detectRunning()
+-				.then(stopIfRunning)
++			stopBackends(ctx.installed)
+ 				.then(function() { return backend.setActiveBackend(name); })
+ 				.then(function() {
+ 					const message = _('Switched to %s. Click start when you want it to run.').format(name);
+@@ -141,7 +145,7 @@
+ 				.catch(function(e) {
+ 					busy = false;
+ 					Array.prototype.forEach.call(segment.querySelectorAll('button'), function(b) { b.disabled = false; });
+-					showHint(_('Switch failed.'));
++					showHint(_('Switch failed: %s').format(e.message || String(e)));
+ 				});
+ 		});
+ 		segment.appendChild(btn);
+--- a/luci-app-daede/htdocs/luci-static/resources/view/daede/backend.js
++++ b/luci-app-daede/htdocs/luci-static/resources/view/daede/backend.js
+@@ -38,9 +38,11 @@
+ 	}
+ };
+ 
+-function execOk(cmd, args) {
+-	return L.resolveDefault(fs.exec(cmd, args || []), { code: 1 }).then(function(res) {
+-		return res && res.code === 0;
++function processRunning(names) {
++	return fs.exec('/bin/pidof', names).then(function(res) {
++		if (!res || (res.code !== 0 && res.code !== 1))
++			throw new Error(res ? (res.stderr || res.stdout || ('pidof exit ' + res.code)) : 'No pidof result');
++		return res.code === 0;
+ 	});
+ }
+ 
+@@ -51,16 +53,11 @@
+ }
+ 
+ function serviceStatus(name) {
+-	return L.resolveDefault(callServiceList(name), {}).then(function(svc) {
+-		let pid = 0, running = false;
+-
+-		try {
+-			const inst = svc[name].instances[name];
+-			running = !!inst.running;
+-			pid = inst.pid || 0;
+-		} catch (e) {}
+-
+-		return { running: running, pid: pid };
++	return callServiceList(name).then(function(svc) {
++		if (!svc || typeof svc !== 'object')
++			throw new Error('Invalid service status response');
++		const inst = svc[name] && svc[name].instances && svc[name].instances[name];
++		return { running: !!(inst && inst.running), pid: inst && inst.pid || 0 };
+ 	});
+ }
+ 
+@@ -78,8 +75,8 @@
+ 	   (which compares the full cmdline `/usr/bin/dae run …` and never hits),
+ 	   reliably tells dae from daed without substring false positives. */
+ 	return Promise.all([
+-		execOk('/bin/pidof', ['dae']),
+-		execOk('/bin/pidof', ['daed'])
++		processRunning(['dae']),
++		processRunning(['daed', 'daed-guard'])
+ 	]).then(function(r) {
+ 		return { dae: r[0], daed: r[1] };
+ 	});
+@@ -92,6 +89,14 @@
+ 	});
+ }
+ 
++function checkedUci(args) {
++	return fs.exec('/sbin/uci', args).then(function(res) {
++		if (!res || res.code !== 0)
++			throw new Error(res && (res.stderr || res.stdout) || 'UCI command failed');
++		return res;
++	});
++}
++
+ function setActiveBackend(name) {
+ 	if (!BACKENDS[name])
+ 		return Promise.reject(new Error('invalid backend: ' + name));
+@@ -99,9 +104,9 @@
+ 	return exists('/etc/config/daede').then(function(ok) {
+ 		if (!ok)
+ 			return fs.write('/etc/config/daede', '');
+-	}).then(function() { return fs.exec('/sbin/uci', ['set', 'daede.config=daede']); })
+-		.then(function() { return fs.exec('/sbin/uci', ['set', 'daede.config.active_backend=' + name]); })
+-		.then(function() { return fs.exec('/sbin/uci', ['commit', 'daede']); })
++	}).then(function() { return checkedUci(['set', 'daede.config=daede']); })
++		.then(function() { return checkedUci(['set', 'daede.config.active_backend=' + name]); })
++		.then(function() { return checkedUci(['commit', 'daede']); })
+ 		.then(function() { uci.set('daede', 'config', 'active_backend', name); });
+ }
+ 
+--- a/luci-app-daede/root/usr/share/rpcd/acl.d/luci-app-daede.json
++++ b/luci-app-daede/root/usr/share/rpcd/acl.d/luci-app-daede.json
+@@ -23,6 +23,7 @@
+ 				"/tmp/luci-app-daede.backup.log": [ "read" ],
+ 				"/bin/pidof dae": [ "exec" ],
+ 				"/bin/pidof daed": [ "exec" ],
++				"/bin/pidof daed daed-guard": [ "exec" ],
+ 				"/usr/bin/env DAE_LOCATION_ASSET=/usr/share/v2ray /usr/bin/dae validate -c /tmp/dae-validate.dae": [ "exec" ],
+ 				"/usr/bin/dae --version": [ "exec" ],
+ 				"/bin/rm -f /tmp/dae-validate.dae": [ "exec" ],
+--- a/luci-app-daede/Makefile
++++ b/luci-app-daede/Makefile
+@@ -33,7 +33,7 @@
+ 	CATEGORY:=LuCI
+ 	SUBMENU:=3. Applications
+ 	TITLE:=LuCI app for daede dashboard
+-	DEPENDS:=+luci-base +PACKAGE_$(PKG_NAME)_dae:dae +PACKAGE_$(PKG_NAME)_daed:daed
++	DEPENDS:=+luci-base +flock +PACKAGE_$(PKG_NAME)_dae:dae +PACKAGE_$(PKG_NAME)_daed:daed
+ 	PKGARCH:=all
+ 	MAINTAINER:=kenzok8
+ endef
+@@ -71,6 +71,7 @@
+ 	$(INSTALL_DATA) ./root/usr/share/rpcd/acl.d/luci-app-daede.json $(1)/usr/share/rpcd/acl.d/luci-app-daede.json
+ 
+ 	$(INSTALL_DIR) $(1)/usr/share/luci-app-daede
++	$(INSTALL_BIN) ./root/usr/share/luci-app-daede/backend-exec $(1)/usr/share/luci-app-daede/backend-exec
+ 	$(INSTALL_BIN) ./root/usr/share/luci-app-daede/pkg-info.sh $(1)/usr/share/luci-app-daede/pkg-info.sh
+ 	$(INSTALL_BIN) ./root/usr/share/luci-app-daede/update-geo.sh $(1)/usr/share/luci-app-daede/update-geo.sh
+ 	$(INSTALL_BIN) ./root/usr/share/luci-app-daede/update-pkg.sh $(1)/usr/share/luci-app-daede/update-pkg.sh
+--- a/daed/files/daed-guard
++++ b/daed/files/daed-guard
+@@ -115,7 +115,8 @@
+ 	fi
+ done
+ child_pid=
+-trap - TERM INT HUP QUIT
++# Repeated procd stop must not interrupt cleanup while the shared lock is held.
++trap '' TERM INT HUP QUIT
+ 
+ # Post-exit cleanup runs after the child is reaped.
+ DAED_GUARD_CLEANUP=post-exit
+--- /dev/null
++++ b/luci-app-daede/root/usr/share/luci-app-daede/backend-exec
+@@ -0,0 +1,25 @@
++#!/bin/sh
++# Keep one lock descriptor alive through the selected core and guard cleanup.
++backend="$1"
++shift
++case "$backend:$1" in
++	dae:/usr/bin/dae|daed:/usr/bin/daed-guard) ;;
++	*) echo "daede: invalid backend command" >&2; exit 1 ;;
++esac
++[ "$2" = run ] || { echo "daede: expected backend run command" >&2; exit 1; }
++exec 9>/var/lock/daede-backend.lock || exit 1
++if ! flock -n 9; then
++	echo "daede: another backend owns the runtime lock, or locking failed" >&2
++	exit 1
++fi
++active="$(uci -q get daede.config.active_backend)" || {
++	echo "daede: cannot read active backend" >&2; exit 1;
++}
++case "$active" in
++	dae|daed) ;;
++	*) echo "daede: invalid active backend: $active" >&2; exit 1 ;;
++esac
++[ "$active" = "$backend" ] || {
++	echo "daede: active backend is $active; refusing $backend" >&2; exit 1;
++}
++exec "$@"

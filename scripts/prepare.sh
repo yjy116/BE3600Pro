@@ -21,6 +21,9 @@ python3 "$ROOT/scripts/add_packages.py" --source "$WRT_DIR" \
     --lock "$ROOT/Config/sources.json" --evidence "$EVIDENCE/extra-sources.json"
 python3 "$ROOT/scripts/install_daede.py" --source "$WRT_DIR" \
     --lock "$ROOT/Config/sources.json" --evidence "$EVIDENCE/daede-source.json"
+cp .extra/kenzok8_openwrt-daede/ci/pins.env "$EVIDENCE/daede-core-pins.env"
+cp package/custom/kenzok8_openwrt-daede/dae/Makefile "$EVIDENCE/dae-Makefile"
+cp package/custom/kenzok8_openwrt-daede/daed/Makefile "$EVIDENCE/daed-Makefile"
 
 # This LuCI frontend owns the service config/init files, as in AX6600.
 # Keep the upstream Tailscale binary recipe and version.

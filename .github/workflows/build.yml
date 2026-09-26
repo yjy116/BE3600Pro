@@ -69,8 +69,8 @@ jobs:
           默认管理地址：192.168.70.1。
 
           保留 owrt 默认包及 PoE 管理，增补 AX6600 应用。原有包优先使用上游 feeds。
-          包含 Aurora 主题及设置插件；DAED 使用 kenzok8 维护版 2026.09.24-r2，配套 LuCI 1.15-r6。
-          只安装 DAED 后端，不包含独立 DAE；管理入口改为“服务 → daede”。
+          包含 Aurora 主题及设置插件；DAE/DAED 均使用 kenzok8 维护版 2026.09.24-r2，配套 LuCI 1.15-r6。
+          “服务 → daede”统一切换两种后端；默认选择 DAED，服务未配置前不启用，禁止两者同时运行。
           manifest、profiles.json、sha256sums 与固件一同保留；配置与日志见本次 Actions artifact。
           编译及静态产物验证不代表实机验证；未执行刷机、PoE 供电或代理运行验证。
           factory.ubi 不代表已确认可通过原厂网页刷入。

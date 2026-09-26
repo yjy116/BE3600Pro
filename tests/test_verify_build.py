@@ -15,14 +15,17 @@ DEVICE = f"CONFIG_TARGET_qualcommbe_ipq53xx_DEVICE_{PROFILE}=y\n"
 PREFIX = f"openwrt-qualcommbe-ipq53xx-{PROFILE}"
 TIMEOUT_SECONDS = 10
 BASELINE = "CONFIG_PACKAGE_luci=y\nCONFIG_PACKAGE_tc-tiny=y\n"
-REQUESTED = "CONFIG_PACKAGE_luci-app-passwall=y\nCONFIG_PACKAGE_ddns-scripts=y\n"
+REQUESTED = ("CONFIG_PACKAGE_luci-app-passwall=y\nCONFIG_PACKAGE_ddns-scripts=y\n"
+             "CONFIG_PACKAGE_dae=y\nCONFIG_PACKAGE_daed=y\nCONFIG_PACKAGE_luci-app-daede=y\n"
+             "CONFIG_PACKAGE_flock=y\n")
 CRITICAL_PACKAGES = (
     "luci-app-tmi-poe", "luci-i18n-tmi-poe-zh-cn", "kmod-dsa-rtl837x",
     "luci-app-gecoosac", "gecoosac",
 )
 CRITICAL_CONFIG = "".join(f"CONFIG_PACKAGE_{name}=y\n" for name in CRITICAL_PACKAGES)
 VALID_CONFIG = DEVICE + BASELINE + REQUESTED + CRITICAL_CONFIG
-PACKAGES = ("luci-app-passwall", "ddns-scripts", *CRITICAL_PACKAGES)
+PACKAGES = ("luci-app-passwall", "ddns-scripts", "dae", "daed", "luci-app-daede",
+            "flock", *CRITICAL_PACKAGES)
 
 
 class BuildVerificationTests(unittest.TestCase):
@@ -73,11 +76,17 @@ class BuildVerificationTests(unittest.TestCase):
         result = self.config(VALID_CONFIG, baseline=BASELINE + options)
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_config_rejects_standalone_dae_and_legacy_daed_ui(self):
-        for package in ("dae", "luci-app-dae", "luci-app-daed"):
+    def test_config_rejects_legacy_dae_and_daed_ui(self):
+        for package in ("luci-app-dae", "luci-app-daed"):
             with self.subTest(package=package):
                 result = self.config(VALID_CONFIG + f"CONFIG_PACKAGE_{package}=y\n")
-                self.assert_rejected(result, "Excluded DAE or legacy DAED packages: " + package)
+                self.assert_rejected(result, "Excluded legacy DAE/DAED interfaces: " + package)
+
+    def test_config_requires_both_backends_and_unified_ui(self):
+        for package in ("dae", "daed", "luci-app-daede", "flock"):
+            with self.subTest(package=package):
+                result = self.config(VALID_CONFIG.replace(f"CONFIG_PACKAGE_{package}=y\n", ""))
+                self.assert_rejected(result, "Requested configuration: missing packages: " + package)
 
     def test_config_rejects_lost_default_even_when_replaced(self):
         result = self.config(VALID_CONFIG.replace("tc-tiny=y", "tc-full=y"))
