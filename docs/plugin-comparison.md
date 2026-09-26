@@ -3,7 +3,9 @@
 审计日期：2026-09-26。目标为 `qualcommbe/ipq53xx` 的
 `xiaomi_be3600-pro-wired-p8`。本文记录源码与配置的静态对比，不代表已完成固件编译或实机验证。
 
-用户最终选择：保留 DAED，排除独立 `luci-app-dae`；不增加 Argon、Aurora，继续使用原默认 Bootstrap 主题。下文保留 AX6600 原 27 个应用的比较记录，本次最终选择其中 26 个。
+用户最终选择：保留 DAED；排除独立 DAE、USB 打印，以及 qBittorrent、Samba、Mini Diskmanager、Partexp 四项 NAS 应用。不增加 Argon、Aurora，继续使用原默认 Bootstrap 主题。下文保留 AX6600 原 27 个应用的比较记录，排除上述 6 项后，本次最终选择 21 个：官方 feeds 15 个，外部补充 6 个。
+
+不追加 `qbittorrent`、`p910nd`、`kmod-usb-printer` 后端或驱动，不拉取 Mini Diskmanager、Partexp 外源。原始设备已有的存储、文件系统与 USB 基础包继续保留。
 
 ## 比较基准
 
@@ -36,10 +38,10 @@
 | 类别 | 数量 | 本次策略 |
 | --- | ---: | --- |
 | 原始 owrt/p8 默认已启用 | 0 | 原有 PoE、防火墙等应用继续保留，但不属于这 27 项 |
-| 官方 LuCI feed 有定义，原始默认未启用 | 19 | 最终选择 18 项；排除独立 DAE，其余沿用原 feeds 实现和依赖 |
-| 官方 LuCI feed 与原始源码均无定义 | 8 | 从 AX6600 参考来源补充，仅引入缺失包 |
+| 官方 LuCI feed 有定义，原始默认未启用 | 19 | 最终选择 15 项；排除 DAE、USB 打印、qBittorrent、Samba |
+| 官方 LuCI feed 与原始源码均无定义 | 8 | 最终补充 6 项；排除 Mini Diskmanager、Partexp 及其外源 |
 
-官方 feeds 已有的 19 个参考应用如下，其中 18 项纳入最终选择。此表中的“启用”表示本次应追加的构建选择；不代表相关服务已经在设备上启动或验证。
+官方 feeds 已有的 19 个参考应用如下，其中 15 项纳入最终选择。此表中的“启用”表示本次应追加的构建选择；不代表相关服务已经在设备上启动或验证。
 
 | 包名 | 原始状态 | 本次处理 |
 | --- | --- | --- |
@@ -52,25 +54,25 @@
 | `luci-app-homeproxy` | feeds 可用，未默认启用 | 启用官方包及其依赖 |
 | `luci-app-openclash` | feeds 可用，未默认启用 | 启用官方包 |
 | `luci-app-passwall` | feeds 可用，未默认启用 | 启用官方包，核对参考配置中的 nftables、Geoview、Haproxy、Xray 选项 |
-| `luci-app-qbittorrent` | feeds 可用，未默认启用 | 启用官方包及其依赖 |
-| `luci-app-samba4` | feeds 可用，未默认启用 | 启用官方包 |
+| `luci-app-qbittorrent` | feeds 可用，未默认启用 | 按最终要求排除，同时不追加 `qbittorrent` 后端 |
+| `luci-app-samba4` | feeds 可用，未默认启用 | 按最终要求排除 |
 | `luci-app-sqm` | feeds 可用，未默认启用 | 使用标准 `sqm-scripts`，不搬入 `sqm-scripts-nss` |
 | `luci-app-statistics` | feeds 可用，未默认启用 | 启用官方包 |
 | `luci-app-ttyd` | feeds 可用，未默认启用 | 启用官方包 |
 | `luci-app-upnp` | feeds 可用，未默认启用 | 启用官方包 |
-| `luci-app-usb-printer` | feeds 可用，未默认启用 | 启用官方包，实际外设能力待验证 |
+| `luci-app-usb-printer` | feeds 可用，未默认启用 | 按最终要求排除，同时不追加 `p910nd`、`kmod-usb-printer` |
 | `luci-app-vlmcsd` | feeds 可用，未默认启用 | 启用官方包 |
 | `luci-app-vnstat2` | feeds 可用，未默认启用 | 启用官方包 |
 | `luci-app-zerotier` | feeds 可用，未默认启用 | 启用官方包 |
 
-缺失的 8 个应用按照 AX6600 [`Scripts/Packages.sh`](https://github.com/yjy116/Immortalwrt-CI-JDC-AX6600/blob/696912e6c18113c91cdb5fe1c079c456cbc78cf2/Scripts/Packages.sh) 追溯来源：
+历史比较中缺失的 8 个应用按照 AX6600 [`Scripts/Packages.sh`](https://github.com/yjy116/Immortalwrt-CI-JDC-AX6600/blob/696912e6c18113c91cdb5fe1c079c456cbc78cf2/Scripts/Packages.sh) 追溯来源。最终使用其中 6 项；Mini Diskmanager、Partexp 仅保留历史来源记录，本次不拉取、不添加：
 
 | 包名 | 外部来源 | 参考分支 | 补充边界 |
 | --- | --- | --- | --- |
 | `luci-app-nikki` | [nikkinikki-org/OpenWrt-nikki](https://github.com/nikkinikki-org/OpenWrt-nikki) | `main` | 补充缺失的前端与必要依赖 |
 | `luci-app-gecoosac` | [VIKINGYFY/packages](https://github.com/VIKINGYFY/packages) | `main` | 定向补包，保留已有 HomeProxy、sing-box 等 |
-| `luci-app-mini-diskmanager` | [4IceG/luci-app-mini-diskmanager](https://github.com/4IceG/luci-app-mini-diskmanager) | `main` | 补充缺失应用 |
-| `luci-app-partexp` | [sirpdboy/luci-app-partexp](https://github.com/sirpdboy/luci-app-partexp) | `main` | 补充缺失应用，不改变原分区布局 |
+| `luci-app-mini-diskmanager` | [4IceG/luci-app-mini-diskmanager](https://github.com/4IceG/luci-app-mini-diskmanager) | `main` | 历史参考；本次排除，不拉取此来源 |
+| `luci-app-partexp` | [sirpdboy/luci-app-partexp](https://github.com/sirpdboy/luci-app-partexp) | `main` | 历史参考；本次排除，不拉取此来源 |
 | `luci-app-tailscale` | [asvow/luci-app-tailscale](https://github.com/asvow/luci-app-tailscale) | `main` | 补充前端，后端优先沿用官方 feeds |
 | `luci-app-easytier` | [EasyTier/luci-app-easytier](https://github.com/EasyTier/luci-app-easytier) | `main` | 补充缺失应用，已有依赖优先保留 |
 | `luci-app-wolultra` | [VIKINGYFY/packages](https://github.com/VIKINGYFY/packages) | `main` | 定向补包，不整库覆盖官方 feeds |
@@ -97,6 +99,6 @@ AX6600 本地 `package/dae` 使用 `olicesx/dae:kdae`、自定义 outbound 和�
 
 ## 验证状态与交付证据
 
-已完成源码默认包、官方 LuCI 包定义和 AX6600 选择项的静态比较。本审计未执行 BE3600 Pro Wired p8 固件编译、刷机、启动、PoE、交换端口、USB 外设、硬件加速或代理功能实机验证。
+已完成源码默认包、官方 LuCI 包定义和 AX6600 选择项的静态比较。首轮 CI 因用户调整插件范围主动取消，尚未取得本次最终配置的完整编译成功证据；未执行 BE3600 Pro Wired p8 刷机、启动、PoE、交换端口、USB 外设、硬件加速或代理功能实机验证。
 
-后续构建须保存实际 `.config`、源码/feeds/外部包提交、构建日志、manifest、校验文件与镜像信息，并核对：原 PoE 应用及中文、RTL837x 驱动仍在；原设备/分区/驱动布局未被定制脚本改写；最终选择的 26 个追加应用没有被 `make defconfig` 静默丢弃；独立 DAE 与新增主题未被显式加入；默认主题仍为 Bootstrap。编译结果和硬件运行结果分别报告，不能相互替代。
+后续构建须保存实际 `.config`、源码/feeds/外部包提交、构建日志、manifest、校验文件与镜像信息，并核对：原 PoE 应用及中文、RTL837x 驱动仍在；原设备/分区/驱动布局未被定制脚本改写；最终选择的 21 个追加应用没有被 `make defconfig` 静默丢弃；被排除的 6 个参考应用、qBittorrent/打印配套包及新增主题未被显式加入；默认主题仍为 Bootstrap。编译结果和硬件运行结果分别报告，不能相互替代。

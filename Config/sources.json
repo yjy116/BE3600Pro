@@ -48,28 +48,6 @@
       ]
     },
     {
-      "repo": "4IceG/luci-app-mini-diskmanager",
-      "branch": "main",
-      "sha": "4b2b7332896063ef888f34da2187c3cc6f366037",
-      "packages": [
-        {
-          "path": "luci-app-mini-diskmanager",
-          "name": "luci-app-mini-diskmanager"
-        }
-      ]
-    },
-    {
-      "repo": "sirpdboy/luci-app-partexp",
-      "branch": "main",
-      "sha": "236187cfe4f1fab7f2dde5279ce378324c3e5f40",
-      "packages": [
-        {
-          "path": "luci-app-partexp",
-          "name": "luci-app-partexp"
-        }
-      ]
-    },
-    {
       "repo": "asvow/luci-app-tailscale",
       "branch": "main",
       "sha": "534eb3f3acba24dac4e6fee9fa33049b004ef121",

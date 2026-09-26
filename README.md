@@ -2,13 +2,13 @@
 
 基于 [VIKINGYFY/immortalwrt 的 owrt 分支](https://github.com/VIKINGYFY/immortalwrt/tree/owrt)，仅编译 **8 网口版 p8**（`qualcommbe/ipq53xx`）。
 
-保留原默认软件、PoE 管理及中文包、PPE/交换机驱动、分区与镜像规则；对比 AX6600 后增补所需应用。保留 DAED，不加入独立 DAE、Aurora 或 Argon，继续使用上游 Bootstrap 默认主题。
+保留原默认软件、PoE 管理及中文包、PPE/交换机驱动、分区与镜像规则；对比 AX6600 后增补所需应用。保留 DAED，不加入独立 DAE、Aurora 或 Argon，继续使用上游 Bootstrap 默认主题。排除雅典娜专用插件及 USB 打印、qBittorrent、Samba、Mini Diskmanager、Partexp。
 
 ## 插件策略
 
-- [完整对比与来源](docs/plugin-comparison.md)：26 个最终选用应用中，18 个使用官方 LuCI feed，8 个补充外部来源。
+- [完整对比与来源](docs/plugin-comparison.md)：21 个最终选用应用中，15 个使用官方 LuCI feed，6 个补充外部来源。
 - [新增包列表](Config/plugins.config)、[功能配置](Config/features.config)、[源码提交](Config/sources.json) 分别维护。
-- 官方已有 HomeProxy、DAED、OpenClash、Passwall、qBittorrent 等包保持原实现，不复制 AX6600 的覆盖版本。
+- 官方已有 HomeProxy、DAED、OpenClash、Passwall 等包保持原实现，不复制 AX6600 的覆盖版本。
 - 外部来源仅补缺失 recipe。不修改设备 DTS、镜像规则、NSS 或分区，不迁移 AX6600 的 Wi-Fi 配置。
 - Tailscale 的界面与后端都提供同名配置/启动文件；保留官方后端二进制版本，明确让新增 LuCI 包拥有这两个文件，变更记录在构建日志中。
 - GeoIP/Geosite 初始数据继续使用上游包；单独提供更新脚本，保留 AX6600 的周日 04:00 更新安排。下载或 SHA256 校验失败直接失败，不使用代理回退下载。
